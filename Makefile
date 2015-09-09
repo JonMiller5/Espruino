@@ -15,6 +15,7 @@
 # ESPRUINO_1V0=1          # Espruino board rev 1.0
 # ESPRUINO_1V1=1          # Espruino board rev 1.1 and 1.2
 # ESPRUINO_1V3=1          # Espruino board rev 1.3 and rev 1v4
+# PIC32MZ_EF_STARTERKIT=1 # Microchip PIC32 Starter Kit with FPU (EF) (Crypto)
 # PICO_1V0=1              # Espruino Pico board rev 1.0
 # PICO_1V1=1              # Espruino Pico board rev 1.1
 # PICO_1V2=1              # Espruino Pico board rev 1.2
@@ -141,6 +142,12 @@ BOARD=ESPRUINOBOARD
 STLIB=STM32F10X_XL
 PRECOMPILED_OBJS+=$(ROOT)/targetlibs/stm32f1/lib/startup_stm32f10x_hd.o
 OPTIMIZEFLAGS+=-Os
+else ifdef PIC32MZ_EF_STARTERKIT
+EMBEDDED=1
+BOARD=PIC32MZ_EF_STARTERKIT
+OPTIMIZEFLAGS+=-O1
+MPLABXC32=1
+XC32PROCESSOR=32MZ2048EFM144
 else ifdef PICO_1V0
 EMBEDDED=1
 USE_DFU=1
@@ -427,7 +434,7 @@ endif
 ifdef RASPBERRYPI
 EMBEDDED=1
 BOARD=RASPBERRYPI
-DEFINES += -DRASPBERRYPI 
+DEFINES += -DRASPBERRYPI
 LINUX=1
 USE_FILESYSTEM=1
 USE_GRAPHICS=1
@@ -734,7 +741,7 @@ SOURCES += \
 libs/network/network.c \
 libs/network/socketserver.c
 
-# 
+#
 WRAPPERSOURCES += libs/network/js/jswrap_jsnetwork.c
 INCLUDE += -I$(ROOT)/libs/network/js
 SOURCES += \
@@ -813,7 +820,7 @@ endif
 ifdef USE_WIRINGPI
 DEFINES += -DUSE_WIRINGPI
 LIBS += -lwiringPi
-INCLUDE += -I/usr/local/include -L/usr/local/lib 
+INCLUDE += -I/usr/local/include -L/usr/local/lib
 endif
 
 endif # BOOTLOADER ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ DON'T USE STUFF ABOVE IN BOOTLOADER
@@ -849,11 +856,11 @@ targetlibs/stm32f1/lib/stm32f10x_tim.c     \
 targetlibs/stm32f1/lib/stm32f10x_usart.c   \
 targetlibs/stm32f1/lib/stm32f10x_wwdg.c    \
 targetlibs/stm32f1/lib/system_stm32f10x.c
-    
-#targetlibs/stm32f1/lib/stm32f10x_cec.c     
-#targetlibs/stm32f1/lib/stm32f10x_crc.c     
-#targetlibs/stm32f1/lib/stm32f10x_dbgmcu.c  
-#targetlibs/stm32f1/lib/stm32f10x_fsmc.c    
+
+#targetlibs/stm32f1/lib/stm32f10x_cec.c
+#targetlibs/stm32f1/lib/stm32f10x_crc.c
+#targetlibs/stm32f1/lib/stm32f10x_dbgmcu.c
+#targetlibs/stm32f1/lib/stm32f10x_fsmc.c
 
 ifdef USB
 STM32_LEGACY_USB=1
@@ -924,20 +931,20 @@ targetlibs/stm32f4/lib/stm32f4xx_tim.c        \
 targetlibs/stm32f4/lib/stm32f4xx_usart.c      \
 targetlibs/stm32f4/lib/stm32f4xx_wwdg.c       \
 targetlibs/stm32f4/lib/system_stm32f4xx.c
-#targetlibs/stm32f4/lib/stm32f4xx_cryp_aes.c  
-#targetlibs/stm32f4/lib/stm32f4xx_dcmi.c       
-#targetlibs/stm32f4/lib/stm32f4xx_dma2d.c      
-#targetlibs/stm32f4/lib/stm32f4xx_can.c        
-#targetlibs/stm32f4/lib/stm32f4xx_cryp_des.c  
-#targetlibs/stm32f4/lib/stm32f4xx_cryp_tdes.c  
-#targetlibs/stm32f4/lib/stm32f4xx_cryp.c       
+#targetlibs/stm32f4/lib/stm32f4xx_cryp_aes.c
+#targetlibs/stm32f4/lib/stm32f4xx_dcmi.c
+#targetlibs/stm32f4/lib/stm32f4xx_dma2d.c
+#targetlibs/stm32f4/lib/stm32f4xx_can.c
+#targetlibs/stm32f4/lib/stm32f4xx_cryp_des.c
+#targetlibs/stm32f4/lib/stm32f4xx_cryp_tdes.c
+#targetlibs/stm32f4/lib/stm32f4xx_cryp.c
 
-#targetlibs/stm32f4/lib/stm32f4xx_hash.c       
-#targetlibs/stm32f4/lib/stm32f4xx_hash_md5.c   
-#targetlibs/stm32f4/lib/stm32f4xx_hash_sha1.c  
-#targetlibs/stm32f4/lib/stm32f4xx_ltdc.c       
-#targetlibs/stm32f4/lib/stm32f4xx_rng.c        
-#targetlibs/stm32f4/lib/stm32f4xx_sai.c        
+#targetlibs/stm32f4/lib/stm32f4xx_hash.c
+#targetlibs/stm32f4/lib/stm32f4xx_hash_md5.c
+#targetlibs/stm32f4/lib/stm32f4xx_hash_sha1.c
+#targetlibs/stm32f4/lib/stm32f4xx_ltdc.c
+#targetlibs/stm32f4/lib/stm32f4xx_rng.c
+#targetlibs/stm32f4/lib/stm32f4xx_sai.c
 #targetlibs/stm32f4/lib/stm324xx_fsmc.c
 ifdef USB
 STM32_USB=1
@@ -951,7 +958,7 @@ ifdef STM32_USB
 SOURCES +=                                 \
 targetlibs/stm32usb/Src/stm32f4xx_ll_usb.c \
 targetlibs/stm32usb/Src/stm32f4xx_hal_pcd.c \
-targetlibs/stm32usb/Src/stm32f4xx_hal_pcd_ex.c 
+targetlibs/stm32usb/Src/stm32f4xx_hal_pcd_ex.c
 
 INCLUDE += -I$(ROOT)/targetlibs/stm32usb -I$(ROOT)/targetlibs/stm32usb/Inc
 SOURCES +=                                 \
@@ -998,7 +1005,7 @@ ifeq ($(FAMILY), NRF52)
 
 	# ARCHFLAGS are shared by both CFLAGS and LDFLAGS.
 	ARCHFLAGS = -mthumb -mabi=aapcs -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16
-	
+
 	ifdef BLE_INTERFACE
 		DEFINES += -DSWI_DISABLE0 -DSOFTDEVICE_PRESENT -DNRF52 -DCONFIG_GPIO_AS_PINRESET -DBOARD_PCA10036 -DS132 -DBLE_STACK_SUPPORT_REQD -DBLE_INTERFACE
 	else
@@ -1060,7 +1067,7 @@ ifeq ($(FAMILY), NRF52)
 
 	else
 
-		# Includes. See NRF52 examples as you add functionality. For example if you are added SPI interface then see Nordic's SPI example. 
+		# Includes. See NRF52 examples as you add functionality. For example if you are added SPI interface then see Nordic's SPI example.
 		# In this example you can view the makefile and take INCLUDES and SOURCES directly from it. Just make sure you set path correctly as seen below.
 		INCLUDE += -I$(NRF52_SDK_PATH)/examples/peripheral/uart/config/uart_pca10036
 		INCLUDE += -I$(NRF52_SDK_PATH)/examples/peripheral/uart/config
@@ -1079,7 +1086,7 @@ ifeq ($(FAMILY), NRF52)
 		INCLUDE += -I$(NRF52_SDK_PATH)/components/libraries/fifo
 		INCLUDE += -I$(NRF52_SDK_PATH)/components/toolchain/gcc
 
-		# Includes for adding timer peripheral. 
+		# Includes for adding timer peripheral.
 		INCLUDE += -I$(NRF52_SDK_PATH)/examples/peripheral/timer/config/timer_pca10036
 		INCLUDE += -I$(NRF52_SDK_PATH)/examples/peripheral/timer/config
 		INCLUDE += -I$(NRF52_SDK_PATH)/components/drivers_nrf/timer
@@ -1156,6 +1163,26 @@ endif
 export CCPREFIX=avr-
 endif
 
+
+
+
+
+ifdef MPLABXC32
+F_CPU = 200000000
+FORMAT = ihex
+
+#ARDUINO_LIB=$(ROOT)/targetlibs/arduino_avr/cores/arduino
+ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+#LDFLAGS += -mrelax
+#AVR=1
+#INCLUDE+=-I$(ARDUINO_LIB) -I$(ARDUINO_LIB)/../../variants/mega
+#DEFINES += -DARDUINO_AVR -D$(CHIP) -D$(BOARD)
+OPTIMIZEFLAGS += -fno-common -fno-exceptions -fdata-sections -ffunction-sections
+
+export CCPREFIX=xc32-
+endif
+
+
 ifdef ARM
 LINKER_FILE = gen/linker.ld
 DEFINES += -DARM
@@ -1226,7 +1253,7 @@ ifdef NRF52
 	INCLUDE += -I$(ROOT)/targets/nrf52
 	SOURCES +=                              \
 	targets/nrf52/main.c                    \
-	targets/nrf52/jshardware.c    
+	targets/nrf52/jshardware.c
 
 	ifdef BLE_INTERFACE
 		SOURCES +=							\
