@@ -65,11 +65,14 @@ static JsSysTime jshGetTimeForSecond();
 // see jshPinWatch/jshGetWatchedPinState
 Pin watchedPins[16];
 
+// Whether a pin is being used for soft PWM or not
+BITFIELD_DECL(jshPinSoftPWM, JSH_PIN_COUNT); // TODO: This should be set to all 0
+
 // simple 4 byte buffers for SPI
 #define JSH_SPIBUF_MASK 3 // 4 bytes
-volatile unsigned char jshSPIBufHead[SPIS];
-volatile unsigned char jshSPIBufTail[SPIS];
-volatile unsigned char jshSPIBuf[SPIS][4]; // 4 bytes packed into an int
+volatile unsigned char jshSPIBufHead[SPI_COUNT];
+volatile unsigned char jshSPIBufTail[SPI_COUNT];
+volatile unsigned char jshSPIBuf[SPI_COUNT][4]; // 4 bytes packed into an int
 
 #ifdef USB
 JsSysTime jshLastWokenByUSB = 0;
@@ -388,22 +391,22 @@ void *setDeviceClockCmd(JshPinFunction device, FunctionalState cmd) {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART6, cmd);
     ptr = USART6;
 #endif
-#if SPIS>= 1
+#if SPI_COUNT >= 1
   } else if (device==JSH_SPI1) {
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, cmd);
     ptr = SPI1;
 #endif
-#if SPIS>= 2
+#if SPI_COUNT >= 2
   } else if (device==JSH_SPI2) {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, cmd);
     ptr = SPI2;
 #endif
-#if SPIS>= 3
+#if SPI_COUNT >= 3
   } else if (device==JSH_SPI3) {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, cmd);
     ptr = SPI3;
 #endif
-#if I2CS>= 1
+#if I2C_COUNT >= 1
   } else if (device==JSH_I2C1) {
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, cmd);
       /* Seems some F103 parts require this reset step - some hardware problem */
@@ -411,7 +414,7 @@ void *setDeviceClockCmd(JshPinFunction device, FunctionalState cmd) {
       RCC_APB1PeriphResetCmd(RCC_APB1Periph_I2C1, DISABLE);
       ptr = I2C1;
 #endif
-#if I2CS>= 2
+#if I2C_COUNT >= 2
   } else if (device==JSH_I2C2) {
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, cmd);
       /* Seems some F103 parts require this reset step - some hardware problem */
@@ -419,7 +422,7 @@ void *setDeviceClockCmd(JshPinFunction device, FunctionalState cmd) {
       RCC_APB1PeriphResetCmd(RCC_APB1Periph_I2C2, DISABLE);
       ptr = I2C2;
 #endif
-#if I2CS>= 3
+#if I2C_COUNT >= 3
   } else if (device==JSH_I2C3) {
       RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C3, cmd);
       /* Seems some F103 parts require this reset step - some hardware problem */
@@ -894,6 +897,13 @@ void jshDelayMicroseconds(int microsec) {
 }
 
 ALWAYS_INLINE void jshPinSetState(Pin pin, JshPinState state) {
+  /* Make sure we kill software PWM if we set the pin state
+   * after we've started it */
+  if (BITFIELD_GET(jshPinSoftPWM, pin)) {
+    BITFIELD_SET(jshPinSoftPWM, pin, 0);
+    jstPinPWM(0,0,pin);
+  }
+
   GPIO_InitTypeDef GPIO_InitStructure;
   bool out = JSHPINSTATE_IS_OUTPUT(state);
   bool af = state==JSHPINSTATE_AF_OUT ||
@@ -1294,7 +1304,7 @@ void jshInit() {
   NVIC_Init(&NVIC_InitStructure);
 
   // reset SPI buffers
-  for (i=0;i<SPIS;i++) {
+  for (i=0;i<SPI_COUNT;i++) {
     jshSPIBufHead[i] = 0;
     jshSPIBufTail[i] = 0;
   }
@@ -1737,11 +1747,12 @@ unsigned int jshGetRandomNumber() {
 #endif
 }
 
-JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq) { // if freq<=0, the default is used
+JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, JshAnalogOutputFlags flags) { // if freq<=0, the default is used
   if (value<0) value=0;
   if (value>1) value=1;
+  if (!isfinite(freq)) freq=0;
   JshPinFunction func = 0;
-  if (jshIsPinValid(pin)) {
+  if (jshIsPinValid(pin) && !(flags&JSAOF_FORCE_SOFTWARE)) {
     int i;
     for (i=0;i<JSH_PININFO_FUNCTIONS;i++) {
       if (freq<=0 && JSH_PINFUNCTION_IS_DAC(pinInfo[pin].functions[i])) {
@@ -1755,12 +1766,28 @@ JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq) { 
   }
 
   if (!func) {
+    if (jshIsPinValid(pin) && (flags&(JSAOF_ALLOW_SOFTWARE|JSAOF_FORCE_SOFTWARE))) {
+      /* we set the bit field here so that if the user changes the pin state
+       * later on, we can get rid of the IRQs */
+      if (!jshGetPinStateIsManual(pin)) {
+        BITFIELD_SET(jshPinSoftPWM, pin, 0);
+        jshPinSetState(pin, JSHPINSTATE_GPIO_OUT);
+      }
+      BITFIELD_SET(jshPinSoftPWM, pin, 1);
+      if (freq<=0) freq=50;
+      jstPinPWM(freq, value, pin);
+      return 0;
+    }
+
+    // Otherwise
     jshPrintCapablePins(pin, "PWM Output", JSH_TIMER1, JSH_TIMERMAX, 0,0, false);
-#if defined(DACS) && DACS>0
+  #if defined(DACS) && DACS>0
     jsiConsolePrint("\nOr pins with DAC output are:\n");
     jshPrintCapablePins(pin, 0, JSH_DAC, JSH_DAC, 0,0, false);
     jsiConsolePrint("\n");
-#endif
+  #endif
+    if (jshIsPinValid(pin))
+      jsiConsolePrint("You can also use analogWrite(pin, val, {soft:true}) for Software PWM on this pin\n");
     return 0;
   }
 
@@ -2204,7 +2231,7 @@ void jshSPISetup(IOEventFlags device, JshSPIInfo *inf) {
   switch (device) {
     case EV_SPI1: spiIRQ = SPI1_IRQn; break;
     case EV_SPI2: spiIRQ = SPI2_IRQn; break;
-#if SPIS>=3
+#if SPI_COUNT>=3
     case EV_SPI3: spiIRQ = SPI3_IRQn; break;
 #endif
     default: assert(0); break;

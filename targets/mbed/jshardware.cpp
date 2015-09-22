@@ -32,7 +32,7 @@ Timer systemTime;
 unsigned int systemTimeHigh;
 bool systemTimeWasHigh;
 
-serial_t mbedSerial[USARTS];
+serial_t mbedSerial[USART_COUNT];
 gpio_t mbedPins[MBED_PINS];
 extern "C" {
 
@@ -169,7 +169,7 @@ JsVarFloat jshPinAnalog(Pin pin) {
   return value;
 }
 
-JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq) { // if freq<=0, the default is used
+JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, JshAnalogOutputFlags flags) { // if freq<=0, the default is used
   return JSH_NOTHING;
 }
 
