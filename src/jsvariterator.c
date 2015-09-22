@@ -224,8 +224,8 @@ static JsVarInt jsvArrayBufferIteratorDataToInt(JsvArrayBufferIterator *it, char
   unsigned int dataLen = JSV_ARRAYBUFFER_GET_SIZE(it->type);
   JsVarInt v = 0;
   if (dataLen==1) v = *(int8_t*)data;
-  else if (dataLen==2) v = *(short*)data;
-  else if (dataLen==4) v = *(int*)data;
+  else if (dataLen==2) v = UNALIGNED_LOAD16(data);
+  else if (dataLen==4) v = UNALIGNED_LOAD32(data);
   else assert(0);
   if ((!JSV_ARRAYBUFFER_IS_SIGNED(it->type)))
     v = v & (JsVarInt)((1UL << (8*dataLen))-1);
@@ -235,8 +235,8 @@ static JsVarInt jsvArrayBufferIteratorDataToInt(JsvArrayBufferIterator *it, char
 static JsVarFloat jsvArrayBufferIteratorDataToFloat(JsvArrayBufferIterator *it, char *data) {
   unsigned int dataLen = JSV_ARRAYBUFFER_GET_SIZE(it->type);
   JsVarFloat v = 0;
-  if (dataLen==4) v = *(float*)data;
-  else if (dataLen==8) v = *(double*)data;
+  if (dataLen==4) v = UNALIGNED_LOAD32F(data);
+  else if (dataLen==8) v = UNALIGNED_LOAD64D(data);
   else assert(0);
   return v;
 }
@@ -294,16 +294,16 @@ static void jsvArrayBufferIteratorIntToData(char *data, unsigned int dataLen, in
   }
   // we don't care about sign when writing - as it gets truncated
   if (dataLen==1) { data[0] = (char)v; }
-  else if (dataLen==2) { *(short*)data = (short)v; }
-  else if (dataLen==4) { *(int*)data = (int)v; }
-  else if (dataLen==8) { *(long long*)data = (long long)v; }
+  else if (dataLen==2) { UNALIGNED_STORE16(data, (short)v); }
+  else if (dataLen==4) { UNALIGNED_STORE32(data, (int)v); }
+  else if (dataLen==8) { UNALIGNED_STORE64(data, (long long)v); }
   else assert(0);
 }
 
 static void jsvArrayBufferIteratorFloatToData(char *data,  unsigned int dataLen, int type, JsVarFloat v) {
   NOT_USED(type);
-  if (dataLen==4) { *(float*)data = (float)v; }
-  else if (dataLen==8) { *(double*)data = (double)v; }
+  if (dataLen==4) { UNALIGNED_STORE32F(data, (float)v); }
+  else if (dataLen==8) { UNALIGNED_STORE64D(data, (double)v); }
   else assert(0);
 }
 

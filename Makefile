@@ -96,7 +96,8 @@ endif
 LATEST_RELEASE=$(shell git tag | grep RELEASE_ | sort | tail -1)
 COMMITS_SINCE_RELEASE=$(shell git log --oneline $(LATEST_RELEASE)..HEAD | wc -l)
 ifneq ($(COMMITS_SINCE_RELEASE),0)
-DEFINES += -DBUILDNUMBER=\"$(COMMITS_SINCE_RELEASE)\"
+#DEFINES += -DBUILDNUMBER=\"$(COMMITS_SINCE_RELEASE)\"
+DEFILES += -DBUILDNUMBER=
 endif
 
 
@@ -148,6 +149,7 @@ EMBEDDED=1
 BOARD=PIC32MZ_EF_STARTERKIT
 OPTIMIZEFLAGS+=-O1
 MPLABXC32=1
+PIC32MZ_EF_SK_USART=1
 XC32PROCESSOR=32MZ2048EFM144
 else ifdef PICO_1V0
 EMBEDDED=1
@@ -537,10 +539,10 @@ endif
 endif
 endif
 
-ifdef DEBUG
+ifdef __JS_DEBUG
 #OPTIMIZEFLAGS=-Os -g
 OPTIMIZEFLAGS=-g
-DEFINES+=-DDEBUG
+DEFINES+=-D__JS_DEBUG
 endif
 
 ifdef PROFILE
@@ -608,7 +610,7 @@ WRAPPERSOURCES =
 SOURCES = \
 targets/stm32_boot/main.c \
 targets/stm32_boot/utils.c
- ifndef DEBUG
+ ifndef __JS_DEBUG
   OPTIMIZEFLAGS=-Os
  endif
 else # !BOOTLOADER but using a bootloader
@@ -1167,23 +1169,38 @@ endif
 
 
 ifdef MPLABXC32
+ifndef MICROCHIP_HARMONY_PATH
+MICROCHIP_HARMONY_PATH=/Users/c11067/microchip/harmony/v1_06
+endif
 F_CPU = 200000000
 FORMAT = ihex
-
-#ARDUINO_LIB=$(ROOT)/targetlibs/arduino_avr/cores/arduino
-ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
-#LDFLAGS += -mrelax
-#AVR=1
-#INCLUDE+=-I$(ARDUINO_LIB) -I$(ARDUINO_LIB)/../../variants/mega
-#DEFINES += -DARDUINO_AVR -D$(CHIP) -D$(BOARD)
-OPTIMIZEFLAGS += -fno-common -fno-exceptions -fdata-sections -ffunction-sections
-
+ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align
+INCLUDE += --include=alloca.h                                                                                     \
+  -I$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk \
+  -I$(MICROCHIP_HARMONY_PATH)/framework \
+  -I./targets/pic32mzef \
+  -I./targets/pic32mzef/framework \
+  -I./targets/pic32mzef/framework/system/clk \
+  -I./targets/pic32mzef/framework/driver/usart
+OPTIMIZEFLAGS += -O1 -fno-common -fno-exceptions -fdata-sections -ffunction-sections
+SOURCES +=                                                                     \
+  targets/pic32mzef/main.c                                                     \
+  targets/pic32mzef/jshardware.c                                               \
+	targets/pic32mzef/system_init.c \
+	targets/pic32mzef/framework/system/clk/src/sys_clk_static.c \
+	targets/pic32mzef/framework/system/ports/src/sys_ports_static.c \
+	targets/pic32mzef/framework/driver/usart/drv_usart_static.c \
+	$(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon.c \
+$(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon_pic32mz.c \
+$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk/bsp_sys_init.c \
+$(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c
+LDFLAGS += -g -O1 -mdebugger -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
+  -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFM144_peripherals.a,--end-group
 export CCPREFIX=xc32-
 endif
 
 
 ifdef ARM
-
   ifndef LINKER_FILE # nRF5x targets define their own linker file.
     LINKER_FILE = gen/linker.ld
   endif
@@ -1317,23 +1334,23 @@ $(WRAPPERFILE): scripts/build_jswrapper.py $(WRAPPERSOURCES)
 	@echo Generating JS wrappers
 	$(Q)echo WRAPPERSOURCES = $(WRAPPERSOURCES)
 	$(Q)echo DEFINES =  $(DEFINES)
-	$(Q)python scripts/build_jswrapper.py $(WRAPPERSOURCES) $(DEFINES) -B$(BOARD)
+	$(Q)Python2.7 scripts/build_jswrapper.py $(WRAPPERSOURCES) $(DEFINES) -B$(BOARD)
 
 ifdef PININFOFILE
 $(PININFOFILE).c $(PININFOFILE).h: scripts/build_pininfo.py
 	@echo Generating pin info
-	$(Q)python scripts/build_pininfo.py $(BOARD) $(PININFOFILE).c $(PININFOFILE).h
+	$(Q)Python2.7 scripts/build_pininfo.py $(BOARD) $(PININFOFILE).c $(PININFOFILE).h
 endif
 
 ifndef NRF5X # nRF5x devices use their own linker files that aren't automatically generated.
 $(LINKER_FILE): scripts/build_linker.py
 	@echo Generating linker scripts
-	$(Q)python scripts/build_linker.py $(BOARD) $(LINKER_FILE) $(BUILD_LINKER_FLAGS)
+	$(Q)Python2.7 scripts/build_linker.py $(BOARD) $(LINKER_FILE) $(BUILD_LINKER_FLAGS)
 endif # NRF5X
 
 $(PLATFORM_CONFIG_FILE): boards/$(BOARD).py scripts/build_platform_config.py
 	@echo Generating platform configs
-	$(Q)python scripts/build_platform_config.py $(BOARD)
+	$(Q)Python2.7 scripts/build_platform_config.py $(BOARD)
 
 compile=$(CC) $(CFLAGS) $(DEFINES) $< -o $@
 link=$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)

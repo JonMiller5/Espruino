@@ -25,7 +25,9 @@
 #include "jswrap_io.h"
 #include "jswrap_date.h" // for non-F1 calendar -> days since 1970 conversion
 
-#include "app.h"
+#include <xc.h>
+#include <sys/attribs.h>
+#include "main.h"
 #include "system_config.h"
 #include "system_definitions.h"
 #include "peripheral/usart/plib_usart.h"
@@ -102,6 +104,9 @@
 #pragma config CSEQ =       0xFFFE
 #endif
 
+#define CORE_TICK_RATE (F_CPU/2000000ul)
+
+extern void __attribute__((nomips16, noreturn, far, weak)) __pic32_software_reset();
 extern void SYS_Initialize ( void* data );
 static int init = 0; // Temp hack to get jsiOneSecAfterStartup() going.
 
@@ -124,23 +129,50 @@ bool __pic32_WriteString(char* ptr)
     return false;
 }
 
+static inline __pic32_init_core_timer(void)
+{
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Configure the core timer
+// clear the count reg
+_CP0_SET_COUNT(0);
+// set up the period in the compare reg
+_CP0_SET_COMPARE(CORE_TICK_RATE);
+
+// The Core timer should halt when we are halted at a debug breakpoint.
+_CP0_BIC_DEBUG(_CP0_DEBUG_COUNTDM_MASK);
+
+// set up the core timer interrupt with a priority of 6 and zero sub-priority
+IFS0CLR = _IFS0_CTIF_MASK;
+IPC0CLR = _IPC0_CTIP_MASK;
+IPC0SET = (6 << _IPC0_CTIP_POSITION);
+IPC0CLR = _IPC0_CTIS_MASK; 
+IPC0SET = (0 << _IPC0_CTIS_POSITION);
+IEC0CLR = _IEC0_CTIE_MASK;
+IEC0SET = (1 << _IEC0_CTIE_POSITION);
+
+}
+
 // Now implement the Espruino HAL API...
 void jshInit()
 {
+    JshUSARTInfo inf;
+    PRISS = 0x76543210u;
+    __pic32_init_core_timer();
+    jshUSARTSetup(EV_SERIAL2,&inf);
+    
     SYS_Initialize ( NULL );
-    appData.InterruptFlag = false;
+    //appData.InterruptFlag = false;
+
     jshInitDevices();
     /* Maintain system services */
     SYS_DEVCON_Tasks(sysObj.sysDevcon);
 
-    JshUSARTInfo inf;
-    jshUSARTSetup(EV_SERIAL2, &inf); // Initialze UART. jshUSARTSetup() gets called each time a UART needs initializing (and is passed baude rate etc...).
     init = 1;
 }
 
 // When 'reset' is called - we try and put peripherals back to their power-on state
 void jshReset() {
-    __pic32_software_reset();
+
 }
 
 void jshKill() {
@@ -169,25 +201,31 @@ bool jshIsUSBSERIALConnected() {
   return false;
 }
 
+volatile JsSysTime SysTickValue;
 /// Get the system time (in ticks)
 JsSysTime jshGetSystemTime()
 {
-  return 0;
+  return SysTickValue;
 }
 
 /// Set the system time (in ticks) - this should only be called rarely as it could mess up things like jsinteractive's timers!
-void jshSetSystemTime(JsSysTime time) {
-
+void jshSetSystemTime(JsSysTime newTime) {
+  jshInterruptOff();
+  SysTickValue = newTime;
+  _CP0_SET_COUNT(0);
+  _CP0_SET_COMPARE(CORE_TICK_RATE);
+  jshInterruptOn();
+  jshGetSystemTime(); // force update of the time
 }
 /// Convert a time in Milliseconds to one in ticks
 JsSysTime jshGetTimeFromMilliseconds(JsVarFloat ms)
 {
-  return 0;
+  return (JsSysTime)(ms * 1000);
 }
 /// Convert ticks to a time in Milliseconds
 JsVarFloat jshGetMillisecondsFromTime(JsSysTime time)
 {
-  return 0.0;
+  return (JsVarFloat)time/1000;
 }
 
 // software IO functions...
@@ -198,11 +236,14 @@ void jshInterruptOn() {
     __builtin_enable_interrupts();
 }
 void jshDelayMicroseconds(int microsec) {
+  JsSysTime initial = SysTickValue;
   if (microsec <= 0)
   {
-    return;
+    return; 
   }
+  while(SysTickValue < (initial + microsec));
 }
+
 void jshPinSetValue(Pin pin, bool value) {
   if (value == 1)
   {
@@ -238,9 +279,9 @@ int jshPinAnalogFast(Pin pin) {
   return 0;
 }
 
-JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq) {
+JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, JshAnalogOutputFlags flags) { // if freq<=0, the default is used
   return JSH_NOTHING;
-} // if freq<=0, the default is used
+}
 
 void jshPinPulse(Pin pin, bool value, JsVarFloat time) {
   //return JSH_NOTHING;
@@ -285,6 +326,14 @@ bool jshIsDeviceInitialised(IOEventFlags device) {
 
 /** Set up a UART, if pins are -1 they will be guessed */
 void jshUSARTSetup(IOEventFlags device, JshUSARTInfo *inf) {
+  if (device == EV_USBSERIAL) {
+    return; // eep!
+  }
+  else if (device != EV_SERIAL2)
+  {
+    jsExceptionHere(JSET_INTERNALERROR, "Unknown serial port device.");
+    return;
+  }
     PLIB_USART_Enable(USART_ID_2);
     __pic32_WriteString("\r\n\nEspruino on PIC32MZ MCU - Proof of Concept\r\n");
 }
@@ -431,8 +480,12 @@ void jshUtilTimerDisable() {
 }
 
 // On SYSTick interrupt, call this
-void jshDoSysTick() {
-
+inline void __attribute__((always_inline)) jshDoSysTick() {
+  /* Handle the delayed Ctrl-C -> interrupt behaviour (see description by EXEC_CTRL_C's definition)  */
+  if (execInfo.execute & EXEC_CTRL_C_WAIT)
+    execInfo.execute = (execInfo.execute & ~EXEC_CTRL_C_WAIT) | EXEC_INTERRUPTED;
+  if (execInfo.execute & EXEC_CTRL_C)
+    execInfo.execute = (execInfo.execute & ~EXEC_CTRL_C) | EXEC_CTRL_C_WAIT;
 }
 
 // the temperature from the internal temperature sensor
@@ -450,4 +503,60 @@ JsVarFloat jshReadVRef()
  * default to `rand()` */
 unsigned int jshGetRandomNumber() {
   return 0;
+}
+
+void __ISR_AT_VECTOR(_CORE_TIMER_VECTOR, IPL6SRS) __attribute__((no_fpu)) CoreTimerHandler(void)
+{
+    unsigned long old_count, period;
+    old_count = _CP0_GET_COUNT();
+    
+    SysTickValue++;
+    jshDoSysTick();
+    
+    // clear the interrupt flag
+    IFS0CLR = _IFS0_CTIF_MASK;
+
+    // update the period
+    period = CORE_TICK_RATE;
+    period += old_count;
+    _CP0_SET_COMPARE(period);
+}
+
+
+void __ISR_AT_VECTOR(_UART2_TX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartTransmitInstance0(void)
+{
+
+
+    /* TODO: Add code to process interrupt here */
+
+    /* Clear pending interrupt */
+    PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_TRANSMIT);
+}
+void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartReceiveInstance0(void)
+{
+    /* TODO: Add code to process interrupt here */
+
+	if(PLIB_INT_SourceFlagGet(INT_ID_0, INT_SOURCE_USART_2_RECEIVE))
+    {
+      uint8_t data;
+        /* Make sure receive buffer has data availible */
+        if (PLIB_USART_ReceiverDataIsAvailable(USART_ID_2))
+        {
+            /* Get the data from the buffer */
+            data = PLIB_USART_ReceiverByteReceive(USART_ID_2);
+        }
+        PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_RECEIVE);
+        jshPushIOCharEvent(EV_SERIAL2, (char) data);
+    }
+    else
+    {
+        __builtin_software_breakpoint();
+    }
+
+}
+void __ISR_AT_VECTOR(_UART2_FAULT_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartErrorInstance0(void)
+{
+    /* Clear pending interrupt */
+    PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_ERROR);
+
 }

@@ -14,7 +14,7 @@
 #include "platform_config.h"
 #include "jsinteractive.h"
 #include "jshardware.h"
-#include "app.h"
+#include "main.h"
 
 int main() {
   jshInit();

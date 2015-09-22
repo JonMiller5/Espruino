@@ -1983,7 +1983,11 @@ JsVar *jsvFindChildFromString(JsVar *parent, const char *name, bool addIfNotFoun
     // Don't Lock here, just use GetAddressOf - to try and speed up the finding
     // TODO: We can do this now, but when/if we move to cacheing vars, it'll break
     JsVar *child = jsvGetAddressOf(childref);
+#if defined(__XC32)
+    if ((memcmp(fastCheck,child->varData.str,4)==0) &&
+#else
     if (*(int*)fastCheck==*(int*)child->varData.str && // speedy check of first 4 bytes
+#endif
         jsvIsStringEqual(child, name)) {
       // found it! unlock parent but leave child locked
       return jsvLockAgain(child);

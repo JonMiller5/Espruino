@@ -26,6 +26,131 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#if defined(__XC32)
+#define UNALIGNED_LOAD16(a) _pic32_unalignedload16(a)
+#define UNALIGNED_LOAD32(a) _pic32_unalignedload32(a)
+#define UNALIGNED_LOAD64(a) _pic32_unalignedload64(a)
+#define UNALIGNED_LOAD32F(a) _pic32_unalignedload32f(a)
+#define UNALIGNED_LOAD64D(a) _pic32_unalignedload64d(a)
+#define UNALIGNED_STORE16(ptr,value) _pic32_unalignedstore16(ptr,value)
+#define UNALIGNED_STORE32(ptr,value) _pic32_unalignedstore32(ptr,value)
+#define UNALIGNED_STORE64(ptr,value) _pic32_unalignedstore64(ptr,value)
+#define UNALIGNED_STORE32F(ptr,value) _pic32_unalignedstore32f(ptr,value)
+#define UNALIGNED_STORE64D(ptr,value) _pic32_unalignedstore64d(ptr,value)
+typedef struct __attribute__ ((packed)) {int w;} UNALIGNED_INT;
+inline static int __attribute__((always_inline))
+_pic32_unalignedload16(volatile void *ptr)
+ {
+    struct unaligned {
+      short i16;
+    } __attribute__ ((packed)) *ip;
+    ip = (struct unaligned *)ptr;
+
+    return ip->i16;
+ }
+inline static int __attribute__((always_inline))
+_pic32_unalignedload32 (volatile void *ptr)
+ {
+    struct unaligned {
+      int i32;
+    } __attribute__ ((packed)) *ip;
+    ip = (struct unaligned *)ptr;
+
+    return ip->i32;
+ }
+ inline static long long __attribute__((always_inline))
+ _pic32_unalignedload64 (volatile void *ptr)
+  {
+     struct unaligned {
+       long long i64;
+     } __attribute__ ((packed)) *ip;
+     ip = (struct unaligned *)ptr;
+
+     return ip->i64;
+  }
+ inline static float __attribute__((always_inline))
+ _pic32_unalignedload32f (volatile void *ptr)
+  {
+     struct unaligned {
+       float f32;
+     } __attribute__ ((packed)) *ip;
+     ip = (struct unaligned *)ptr;
+
+     return ip->f32;
+  }
+  inline static long double __attribute__((always_inline))
+  _pic32_unalignedload64d (volatile void *ptr)
+   {
+      struct unaligned {
+        long double d64;
+      } __attribute__ ((packed)) *ip;
+      ip = (struct unaligned *)ptr;
+
+      return ip->d64;
+   }
+inline static short __attribute__((always_inline))
+_pic32_unalignedstore16(volatile void *ptr, short value)
+   {
+     struct unaligned {
+       short i16;
+     } __attribute__ ((packed)) *ip;
+     ip = (struct unaligned *)ptr;
+     ip->i16 = value;
+     return value;
+   }
+inline static int __attribute__((always_inline))
+_pic32_unalignedstore32(volatile void *ptr, int value)
+{
+  struct unaligned {
+    int i32;
+  } __attribute__ ((packed)) *ip;
+  ip = (struct unaligned *)ptr;
+  ip->i32 = value;
+  return value;
+}
+inline static long long __attribute__((always_inline))
+_pic32_unalignedstore64(volatile void *ptr, long long value)
+   {
+     struct unaligned {
+       long long i64;
+     } __attribute__ ((packed)) *ip;
+     ip = (struct unaligned *)ptr;
+     ip->i64 = value;
+     return value;
+   }
+   inline static float __attribute__((always_inline))
+   _pic32_unalignedstore32f(volatile void *ptr, float value)
+   {
+     struct unaligned {
+       float f32;
+     } __attribute__ ((packed)) *ip;
+     ip = (struct unaligned *)ptr;
+     ip->f32 = value;
+     return value;
+   }
+   inline static long double __attribute__((always_inline))
+   _pic32_unalignedstore64d(volatile void *ptr, long double value)
+      {
+        struct unaligned {
+          long double d64;
+        } __attribute__ ((packed)) *ip;
+        ip = (struct unaligned *)ptr;
+        ip->d64 = value;
+        return value;
+      }
+#else
+#define UNALIGNED_LOAD16(a) (*(short*)(a))
+#define UNALIGNED_LOAD32(a) (*(int*)(a))
+#define UNALIGNED_LOAD64(a) (*(long long*)(a))
+#define UNALIGNED_LOAD32f(a) (*(float*)(a))
+#define UNALIGNED_LOAD64d(a) (*(long double*)(a))
+#define UNALIGNED_STORE16(ptr,value) (*ptr=value)
+#define UNALIGNED_STORE32(ptr,value) (*ptr=value)
+#define UNALIGNED_STORE64(ptr,value) (*ptr=value)
+#define UNALIGNED_STORE32F(ptr,value) (*ptr=value)
+#define UNALIGNED_STORE64D(ptr,value) (*ptr=value)
+#endif
+
 #if defined(LINUX) || defined(ARDUINO_AVR)
 #include <math.h>
 #else
