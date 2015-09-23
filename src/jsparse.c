@@ -462,6 +462,10 @@ NO_INLINE JsVar *jspeFunctionCall(JsVar *function, JsVar *functionName, JsVar *t
         if ((unsigned)argCount>=argPtrSize) {
           // allocate more space on stack if needed
           unsigned int newArgPtrSize = argPtrSize?argPtrSize*4:16;
+#if defined(__XC32)
+              if (newArgPtrSize > 1000)
+                __builtin_software_breakpoint();
+#endif
           JsVar **newArgPtr = (JsVar**)alloca(sizeof(JsVar*)*newArgPtrSize);
           memcpy(newArgPtr, argPtr, (unsigned)argCount*sizeof(JsVar*));
           argPtr = newArgPtr;

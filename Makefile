@@ -1174,8 +1174,8 @@ MICROCHIP_HARMONY_PATH=/Users/c11067/microchip/harmony/v1_06
 endif
 F_CPU = 200000000
 FORMAT = ihex
-ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align
-INCLUDE += --include=alloca.h                                                                                     \
+ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -Wall -Wextra -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align -save-temps
+INCLUDE +=                                      \
   -I$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk \
   -I$(MICROCHIP_HARMONY_PATH)/framework \
   -I./targets/pic32mzef \
@@ -1194,7 +1194,9 @@ SOURCES +=                                                                     \
 $(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon_pic32mz.c \
 $(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk/bsp_sys_init.c \
 $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c
-LDFLAGS += -g -O1 -mdebugger -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
+LDFLAGS += -g -O1 -mdebugger -Wl,--defsym=_DEBUGGER=1 \
+  -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
+  -Wl,--report-mem -mreserve=data@0x0:0x37F \
   -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFM144_peripherals.a,--end-group
 export CCPREFIX=xc32-
 endif

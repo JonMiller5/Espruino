@@ -31,7 +31,7 @@
 
 // ----------------------------------------------------------------------------
 typedef enum {
-  IS_NONE,
+  IS_NONE, 
   IS_HAD_R,
   IS_HAD_27,
   IS_HAD_27_79,
@@ -1178,7 +1178,7 @@ void jsiExecuteEvents() {
     jsiExecuteEventCallbackArgsArray(thisVar, func, argsArray);
     jsvUnLock(argsArray);
     //jsPrint("Event Done\n");
-    jsvUnLock2(func, thisVar);
+    jsvUnLock2(func, thisVar); 
   }
   if (hasEvents) {
     jsiSetBusy(BUSY_INTERACTIVE, false);
@@ -1191,6 +1191,10 @@ NO_INLINE bool jsiExecuteEventCallbackArgsArray(JsVar *thisVar, JsVar *callbackV
   unsigned int l = (unsigned int)jsvGetArrayLength(argsArray);
   JsVar **args = 0;
   if (l) {
+#if defined(__XC32)
+    if (l > 100)
+      __builtin_software_breakpoint();
+#endif
     args = alloca(sizeof(JsVar*) * l);
     if (!args) return false;
     jsvGetArrayItems(argsArray, l, args); // not very fast
@@ -1469,7 +1473,7 @@ void jsiIdle() {
   jsvObjectIteratorNew(&it, timerArrayPtr);
   while (jsvObjectIteratorHasValue(&it) && !(jsiStatus & JSIS_TIMERS_CHANGED)) {
     bool hasDeletedTimer = false;
-    JsVar *timerPtr = jsvObjectIteratorGetValue(&it);
+    JsVar *timerPtr = jsvObjectIteratorGetValue(&it); 
     JsSysTime timerTime = (JsSysTime)jsvGetLongIntegerAndUnLock(jsvObjectGetChild(timerPtr, "time", 0));
     JsSysTime timeUntilNext = timerTime - timePassed;
 

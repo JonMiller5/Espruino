@@ -175,7 +175,7 @@ extern int isfinite ( double );
   OPT - potential for speed optimisation
 */
 
-#if defined(ARM) || defined(AVR)
+#if defined(ARM) || defined(AVR) || defined(__XC32)
 #define alloca(x) __builtin_alloca(x)
 #endif
 

@@ -21,3 +21,4 @@ diffs/*
 .settings
 MDN_URLS.txt
 node_modules
+/espruino_1v80.390_pic32mz_ef_sk.X/nbproject/private/

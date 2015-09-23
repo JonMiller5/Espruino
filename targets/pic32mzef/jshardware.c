@@ -157,11 +157,12 @@ void jshInit()
 {
     JshUSARTInfo inf;
     PRISS = 0x76543210u;
-    __pic32_init_core_timer();
-    jshUSARTSetup(EV_SERIAL2,&inf);
-    
+
     SYS_Initialize ( NULL );
-    //appData.InterruptFlag = false;
+    
+    jshUSARTSetup(EV_SERIAL2,&inf);
+    __pic32_init_core_timer();
+    
 
     jshInitDevices();
     /* Maintain system services */
@@ -201,7 +202,7 @@ bool jshIsUSBSERIALConnected() {
   return false;
 }
 
-volatile JsSysTime SysTickValue;
+volatile JsSysTime SysTickValue = 0;
 /// Get the system time (in ticks)
 JsSysTime jshGetSystemTime()
 {
@@ -225,7 +226,7 @@ JsSysTime jshGetTimeFromMilliseconds(JsVarFloat ms)
 /// Convert ticks to a time in Milliseconds
 JsVarFloat jshGetMillisecondsFromTime(JsSysTime time)
 {
-  return (JsVarFloat)time/1000;
+  return ((JsVarFloat)time)/1000;
 }
 
 // software IO functions...
@@ -468,11 +469,9 @@ void timer_init(JsSysTime period)
 
 /// Start the timer and get it to interrupt after 'period'
 void jshUtilTimerStart(JsSysTime period) {
-  //timer_init(period);
 }
 /// Reschedult the timer (it should already be running) to interrupt after 'period'
 void jshUtilTimerReschedule(JsSysTime period) {
-
 }
 /// Stop the timer
 void jshUtilTimerDisable() {
@@ -532,7 +531,7 @@ void __ISR_AT_VECTOR(_UART2_TX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHand
     /* Clear pending interrupt */
     PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_TRANSMIT);
 }
-void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartReceiveInstance0(void)
+void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstance0(void)
 {
     /* TODO: Add code to process interrupt here */
 

@@ -722,6 +722,10 @@ JsVar *jswrap_function_apply_or_call(JsVar *parent, JsVar *thisArg, JsVar *argsA
       jsExceptionHere(JSET_ERROR, "Array passed to Function.apply is too big! Maximum 64 arguments, got %d", argC);
       return 0;
     }
+#if defined(__XC32)
+        if (argC > 1000)
+          __builtin_software_breakpoint();
+#endif
     args = (JsVar**)alloca((size_t)argC * sizeof(JsVar*));
     for (i=0;i<argC;i++) args[i] = 0;
     // TODO: Use jsvGetArrayItems?
