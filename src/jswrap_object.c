@@ -156,7 +156,7 @@ JsVar *jswrap_object_clone(JsVar *parent) {
   "type" : "staticmethod",
   "class" : "Object",
   "name" : "keys",
-  "generate_full" : "jswrap_object_keys_or_property_names(object, false)",
+  "generate_full" : "jswrap_object_keys_or_property_names(object, false, false)",
   "params" : [
     ["object","JsVar","The object to return keys for"]
   ],
@@ -168,7 +168,7 @@ Return all enumerable keys of the given object
   "type" : "staticmethod",
   "class" : "Object",
   "name" : "getOwnPropertyNames",
-  "generate_full" : "jswrap_object_keys_or_property_names(object, true)",
+  "generate_full" : "jswrap_object_keys_or_property_names(object, true, false)",
   "params" : [
     ["object","JsVar","The Object to return a list of property names for"]
   ],
@@ -179,14 +179,19 @@ Returns an array of all properties (enumerable or not) found directly on a given
  **Note:** This doesn't currently work as it should for built-in objects and their prototypes. See bug #380
  */
 
-// This is for Object.keys and Object.
-JsVar *jswrap_object_keys_or_property_names(JsVar *obj, bool includeNonEnumerable) {
+/** This is for Object.keys and Object. */
+JsVar *jswrap_object_keys_or_property_names(
+    JsVar *obj,
+    bool includeNonEnumerable,  ///< include 'hidden' items
+    bool includePrototype) { ///< include items for the prototype too (for autocomplete)
+
+  JsVar *arr = jsvNewWithFlags(JSV_ARRAY);
+  if (!arr) return 0;
+
   // strings are iterable, but we shouldn't try and show keys for them
-  if (jsvIsIterable(obj) && !jsvIsString(obj)) {
+  if (jsvIsIterable(obj)) {
     JsvIsInternalChecker checkerFunction = jsvGetInternalFunctionCheckerFor(obj);
 
-    JsVar *arr = jsvNewWithFlags(JSV_ARRAY);
-    if (!arr) return 0;
     JsvIterator it;
     jsvIteratorNew(&it, obj);
     while (jsvIteratorHasElement(&it)) {
@@ -204,38 +209,45 @@ JsVar *jswrap_object_keys_or_property_names(JsVar *obj, bool includeNonEnumerabl
       jsvIteratorNext(&it);
     }
     jsvIteratorFree(&it);
+  }
 
-    /* Search our built-in symbol table
-       Assume that ALL builtins are non-enumerable. This isn't great but
-       seems to work quite well right now! */
-    if (includeNonEnumerable) {
-      const JswSymList *symbols = 0;
+  /* Search our built-in symbol table
+     Assume that ALL builtins are non-enumerable. This isn't great but
+     seems to work quite well right now! */
+  if (includeNonEnumerable) {
+    const JswSymList *symbols = 0;
 
-      JsVar *protoOwner = jspGetPrototypeOwner(obj);
-      if (protoOwner) {
-        symbols = jswGetSymbolListForObjectProto(protoOwner);
-        jsvUnLock(protoOwner);
-      } else if (!jsvIsObject(obj) || jsvIsRoot(obj)) {
-        // get symbols, but only if we're not doing it on a basic object
-        symbols = jswGetSymbolListForObject(obj);
-      }
+    JsVar *protoOwner = jspGetPrototypeOwner(obj);
+    if (protoOwner) {
+      // If protoOwner then this is the prototype (protoOwner is the object)
+      symbols = jswGetSymbolListForObjectProto(protoOwner);
+      jsvUnLock(protoOwner);
+    } else if (!jsvIsObject(obj) || jsvIsRoot(obj)) {
+      // get symbols, but only if we're not doing it on a basic object
+      symbols = jswGetSymbolListForObject(obj);
+    }
 
+    if (symbols) {
+      unsigned int i;
+      for (i=0;i<symbols->symbolCount;i++)
+        jsvArrayAddString(arr, &symbols->symbolChars[symbols->symbols[i].strOffset]);
+    }
+
+    if (includePrototype) {
+      symbols = jswGetSymbolListForObjectProto(obj);
       if (symbols) {
         unsigned int i;
         for (i=0;i<symbols->symbolCount;i++)
           jsvArrayAddString(arr, &symbols->symbolChars[symbols->symbols[i].strOffset]);
       }
-
-      if (jsvIsArray(obj) || jsvIsString(obj)) {
-        jsvArrayAddString(arr, "length");
-      }
     }
 
-    return arr;
-  } else {
-    jsWarn("Object.keys called on non-object");
-    return 0;
+    if (jsvIsArray(obj) || jsvIsString(obj)) {
+      jsvArrayAddString(arr, "length");
+    }
   }
+
+  return arr;
 }
 
 /*JSON{
@@ -468,7 +480,7 @@ void jswrap_object_addEventListener(JsVar *parent, const char *eventName, void (
 
 #define EVENTNAME_SIZE 16
 bool jswrap_object_get_event_name(char *eventName, JsVar *event) {
-  strncpy(eventName,"#on",EVENTNAME_SIZE);
+  strncpy(eventName, JS_EVENT_PREFIX, EVENTNAME_SIZE);
   if (jsvGetString(event, &eventName[3], EVENTNAME_SIZE-4)==(EVENTNAME_SIZE-4)) {
     jsExceptionHere(JSET_ERROR, "Event name too long\n");
     return false;
@@ -489,8 +501,8 @@ bool jswrap_object_get_event_name(char *eventName, JsVar *event) {
 Register an event listener for this object, for instance ```http.on('data', function(d) {...})```. See Node.js's EventEmitter.
  */
 void jswrap_object_on(JsVar *parent, JsVar *event, JsVar *listener) {
-  if (!jsvIsObject(parent)) {
-    jsWarn("Parent must be a proper object - not a String, Integer, etc.");
+  if (!jsvHasChildren(parent)) {
+    jsWarn("Parent must be an object - not a String, Integer, etc.");
     return;
   }
   if (!jsvIsString(event)) {
@@ -528,7 +540,7 @@ void jswrap_object_on(JsVar *parent, JsVar *event, JsVar *listener) {
   if (jsvIsStringEqual(event, "data")) {
     JsVar *buf = jsvObjectGetChild(parent, STREAM_BUFFER_NAME, 0);
     if (jsvIsString(buf)) {
-      jsiQueueObjectCallbacks(parent, "#ondata", &buf, 1);
+      jsiQueueObjectCallbacks(parent, STREAM_CALLBACK_NAME, &buf, 1);
       jsvRemoveNamedChild(parent, STREAM_BUFFER_NAME);
     }
     jsvUnLock(buf);
@@ -548,8 +560,8 @@ void jswrap_object_on(JsVar *parent, JsVar *event, JsVar *listener) {
 Call the event listeners for this object, for instance ```http.emit('data', 'Foo')```. See Node.js's EventEmitter.
  */
 void jswrap_object_emit(JsVar *parent, JsVar *event, JsVar *argArray) {
-  if (!jsvIsObject(parent)) {
-    jsWarn("Parent must be a proper object - not a String, Integer, etc.");
+  if (!jsvHasChildren(parent)) {
+    jsWarn("Parent must be an object - not a String, Integer, etc.");
     return;
   }
   if (!jsvIsString(event)) {
@@ -593,8 +605,8 @@ void jswrap_object_emit(JsVar *parent, JsVar *event, JsVar *argArray) {
 Removes all listeners, or those of the specified event.
  */
 void jswrap_object_removeAllListeners(JsVar *parent, JsVar *event) {
-  if (!jsvIsObject(parent)) {
-    jsWarn("Parent must be a proper object - not a String, Integer, etc.");
+  if (!jsvHasChildren(parent)) {
+    jsWarn("Parent must be an object - not a String, Integer, etc.");
     return;
   }
   if (jsvIsString(event)) {
@@ -607,16 +619,13 @@ void jswrap_object_removeAllListeners(JsVar *parent, JsVar *event) {
       jsvUnLock(eventList);
     }
   } else if (jsvIsUndefined(event)) {
-    // Eep. We must remove everything beginning with '#on'
+    // Eep. We must remove everything beginning with '#on' (JS_EVENT_PREFIX)
     JsvObjectIterator it;
     jsvObjectIteratorNew(&it, parent);
     while (jsvObjectIteratorHasValue(&it)) {
       JsVar *key = jsvObjectIteratorGetKey(&it);
       jsvObjectIteratorNext(&it);
-      if (jsvIsString(key) &&
-          key->varData.str[0]=='#' &&
-          key->varData.str[1]=='o' &&
-          key->varData.str[2]=='n') {
+      if (jsvIsStringEqualOrStartsWith(key, JS_EVENT_PREFIX, true)) {
         // begins with #on - we must kill it
         jsvRemoveChild(parent, key);
       }
