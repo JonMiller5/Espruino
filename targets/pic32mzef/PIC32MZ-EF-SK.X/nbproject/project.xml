@@ -3,8 +3,8 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>espruino_1v80.390_pic32mz_ef_sk</name>
-            <creation-uuid>cba1fc3d-c25a-4a92-a13e-197de352a02b</creation-uuid>
+            <name>PIC32MZ-EF-SK</name>
+            <creation-uuid>7c6caceb-726b-4192-bb04-80cbeaadbcbc</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
             <cpp-extensions/>
