@@ -1367,7 +1367,7 @@ MICROCHIP_HARMONY_PATH=/Users/c11067/microchip/harmony/v1_06
 endif
 F_CPU = 200000000
 FORMAT = ihex
-ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -Wall -Wextra -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align -save-temps
+ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -Wall -Wextra -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align -save-temps=obj
 INCLUDE +=                                      \
   -I$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk \
   -I$(MICROCHIP_HARMONY_PATH)/framework \
@@ -1745,6 +1745,9 @@ $(PROJ_NAME).elf: $(OBJS) $(LINKER_FILE)
 	@echo $($(quiet_)link)
 	@$(call link)
 
+espruino.elf: $(PROJ_NAME).elf
+	cp $(PROJ_NAME).elf espruino.elf
+
 $(PROJ_NAME).lst : $(PROJ_NAME).elf
 	@echo $($(quiet_)obj_dump)
 	@$(call obj_dump)
@@ -1770,7 +1773,7 @@ ifndef TRAVIS
 	bash scripts/check_size.sh $(PROJ_NAME).bin
 endif
 
-proj: $(PROJ_NAME).lst $(PROJ_NAME).bin $(PROJ_NAME).hex
+proj: $(PROJ_NAME).lst $(PROJ_NAME).bin $(PROJ_NAME).hex espruino.elf
 
 #proj: $(PROJ_NAME).lst $(PROJ_NAME).hex $(PROJ_NAME).srec $(PROJ_NAME).bin
 
@@ -1825,3 +1828,5 @@ clean:
 	$(Q)rm -f $(PROJ_NAME).bin
 	$(Q)rm -f $(PROJ_NAME).srec
 	$(Q)rm -f $(PROJ_NAME).lst
+	$(Q)rm -f espruino.elf
+
