@@ -24,3 +24,4 @@ node_modules
 *.i
 *.s
 /targets/pic32mzef/PIC32MZ-EF-SK.X/nbproject/private/
+src/cscope.out
