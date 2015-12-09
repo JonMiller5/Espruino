@@ -248,25 +248,33 @@ void jshDelayMicroseconds(int microsec) {
 void jshPinSetValue(Pin pin, bool value) {
   if (value == 1)
   {
-//    nrf_gpio_pin_set(pin);
+      if (pinInfo[pin].port == JSH_PORTH)
+          PLIB_PORTS_PinSet( PORTS_ID_0, PORT_CHANNEL_H, pin );
+      else
+          __builtin_software_breakpoint();
   }
   else
   {
-//    nrf_gpio_pin_clear(pin);
+      if (pinInfo[pin].port == JSH_PORTH)
+          PLIB_PORTS_PinClear( PORTS_ID_0, PORT_CHANNEL_H, pin );
+      else
+          __builtin_software_breakpoint();
   }
 }
 bool jshPinGetValue(Pin pin) {
+//    __builtin_software_breakpoint();
 //  return nrf_gpio_pin_read(pin);
 }
 // ------
 
 /// Set the pin state
 void jshPinSetState(Pin pin, JshPinState state) {
-
+//    __builtin_software_breakpoint();
 }
 /** Get the pin state (only accurate for simple IO - won't return JSHPINSTATE_USART_OUT for instance).
  * Note that you should use JSHPINSTATE_MASK as other flags may have been added */
 JshPinState jshPinGetState(Pin pin) {
+//    __builtin_software_breakpoint();
   return JSHPINSTATE_UNDEFINED;
 }
 
@@ -285,10 +293,12 @@ JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, Js
 }
 
 void jshPinPulse(Pin pin, bool value, JsVarFloat time) {
+    __builtin_software_breakpoint();
   //return JSH_NOTHING;
 }
 ///< Can the given pin be watched? it may not be possible because of conflicts
 bool jshCanWatch(Pin pin) {
+    __builtin_software_breakpoint();
   return false;
 }
 
@@ -303,12 +313,12 @@ JshPinFunction jshGetCurrentPinFunction(Pin pin) {
 
 /// Given a pin function, set that pin to the 16 bit value (used mainly for DACs and PWM)
 void jshSetOutputValue(JshPinFunction func, int value) {
-
+    __builtin_software_breakpoint();
 }
 
 /// Enable watchdog with a timeout in seconds
 void jshEnableWatchDog(JsVarFloat timeout) {
-
+    __builtin_software_breakpoint();
 }
 
 /** Check the pin associated with this EXTI - return true if it is a 1 */
