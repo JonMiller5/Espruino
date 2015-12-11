@@ -41,7 +41,7 @@ chip = {
 devices = {
   'BTN1' : { 'pin' : 'B12' },
   'BTN2' : { 'pin' : 'B13' },
-  'BTN3' : { 'pin' : 'B14' },
+  # 'BTN3' : { 'pin' : 'B14' }, Not allowed due to multiplexing with USART
   'LED1' : { 'pin' : 'H0' },
   'LED2' : { 'pin' : 'H1' },
   'LED3' : { 'pin' : 'H2' },
@@ -49,12 +49,12 @@ devices = {
 
 def get_pins():
     pins = [
-        { "name":"PH0", "sortingname":"H0", "port":"H", "num":"43", "functions":{}, "csv":{} },
-        { "name":"PH1", "sortingname":"H1", "port":"H", "num":"44", "functions":{}, "csv":{} },
-        { "name":"PH2", "sortingname":"H2", "port":"H", "num":"45", "functions":{}, "csv":{} },
-        { "name":"PB12", "sortingname":"B12", "port":"B", "num":"59", "functions":{}, "csv":{} },
-        { "name":"PB13", "sortingname":"B13", "port":"B", "num":"60", "functions":{}, "csv":{} },
-        { "name":"PB14", "sortingname":"B14", "port":"B", "num":"61", "functions":{}, "csv":{} },
+        { "name":"PH0", "sortingname":"H0", "port":"H", "num":"0", "functions":{}, "csv":{} },
+        { "name":"PH1", "sortingname":"H1", "port":"H", "num":"1", "functions":{}, "csv":{} },
+        { "name":"PH2", "sortingname":"H2", "port":"H", "num":"2", "functions":{}, "csv":{} },
+        { "name":"PB12", "sortingname":"B12", "port":"B", "num":"12", "functions":{}, "csv":{} },
+        { "name":"PB13", "sortingname":"B13", "port":"B", "num":"13", "functions":{}, "csv":{} },
+        { "name":"PB14", "sortingname":"B14", "port":"B", "num":"14", "functions":{}, "csv":{} },
       ];
     return pins
 
