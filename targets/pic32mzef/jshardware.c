@@ -34,6 +34,10 @@
 #include "peripheral/devcon/plib_devcon.h"
 #include <assert.h>
 
+#ifndef __conditional_software_breakpoint
+#define __conditional_software_breakpoint(a) ((void)(0))
+#endif
+
 #ifdef PIC32MZ_EF_SK_USART
 //  #include "uart_interface.h"
 #endif
