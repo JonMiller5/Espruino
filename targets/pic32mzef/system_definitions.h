@@ -59,7 +59,9 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include "driver/usart/drv_usart_static.h"
 #include "peripheral/usart/plib_usart.h"
 #include "peripheral/int/plib_int.h"
+#include "peripheral/spi/plib_spi.h"
 #include "system/ports/sys_ports.h"
+#include "driver/spi/drv_spi_static.h"
 
 
 #include "main.h"
