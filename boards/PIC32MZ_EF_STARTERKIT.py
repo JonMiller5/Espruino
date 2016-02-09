@@ -48,15 +48,18 @@ devices = {
 };
 
 def get_pins():
-    pins = [
-        { "name":"PH0", "sortingname":"H0", "port":"H", "num":"0", "functions":{}, "csv":{} },
-        { "name":"PH1", "sortingname":"H1", "port":"H", "num":"1", "functions":{}, "csv":{} },
-        { "name":"PH2", "sortingname":"H2", "port":"H", "num":"2", "functions":{}, "csv":{} },
-        { "name":"PB12", "sortingname":"B12", "port":"B", "num":"12", "functions":{}, "csv":{} },
-        { "name":"PB13", "sortingname":"B13", "port":"B", "num":"13", "functions":{}, "csv":{} },
-        { "name":"PB14", "sortingname":"B14", "port":"B", "num":"14", "functions":{}, "csv":{} },
-      ];
-    return pins
+  pins = [
+      { "name":"PH0", "sortingname":"H0", "port":"H", "num":"0", "functions":{}, "csv":{} },
+      { "name":"PH1", "sortingname":"H1", "port":"H", "num":"1", "functions":{}, "csv":{} },
+      { "name":"PH2", "sortingname":"H2", "port":"H", "num":"2", "functions":{}, "csv":{} },
+      { "name":"PB12", "sortingname":"B12", "port":"B", "num":"12", "functions":{}, "csv":{} },
+      { "name":"PB13", "sortingname":"B13", "port":"B", "num":"13", "functions":{}, "csv":{} },
+      { "name":"PB14", "sortingname":"B14", "port":"B", "num":"14", "functions":{}, "csv":{} },
+      { "name":"PD1", "sortingname":"D1", "port":"D", "num":"1", "functions":{"SPI1_SCK":0}, "csv":{}},
+      { "name":"PD14", "sortingname":"D14", "port":"D", "num":"14", "functions":{"SPI1_MISO":0}, "csv":{}},
+      { "name":"PG8", "sortingname":"G8", "port":"G", "num":"8", "functions":{"SPI1_MOSI":0}, "csv":{}}
+    ];
+  return pins
 
 board_css = """
 """;

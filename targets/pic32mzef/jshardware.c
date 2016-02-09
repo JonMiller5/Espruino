@@ -32,8 +32,8 @@
 #include "system_definitions.h"
 #include "peripheral/usart/plib_usart.h"
 #include "peripheral/devcon/plib_devcon.h"
+#include "peripheral/spi/plib_spi.h"
 #include <assert.h>
-
 #ifndef __conditional_software_breakpoint
 #define __conditional_software_breakpoint(a) ((void)(0))
 #endif
@@ -375,8 +375,10 @@ void jshUSARTSetup(IOEventFlags device, JshUSARTInfo *inf) {
     jsExceptionHere(JSET_INTERNALERROR, "Unknown serial port device.");
     return;
   }
-    PLIB_USART_Enable(USART_ID_2);
-    __pic32_WriteString("\r\n\nEspruino on PIC32MZ MCU - Proof of Concept\r\n");
+  
+
+  PLIB_USART_Enable(USART_ID_2);
+  __pic32_WriteString("\r\n\nEspruino on PIC32MZ MCU - Proof of Concept\r\n");
 }
 /** Kick a device into action (if required). For instance we may need
  * to set up interrupts */
@@ -400,30 +402,109 @@ void jshUSARTKick(IOEventFlags device) {
 }
 
 /** Set up SPI, if pins are -1 they will be guessed */
-void jshSPISetup(IOEventFlags device, JshSPIInfo *inf) {
+void jshSPISetup(IOEventFlags device, JshSPIInfo *inf)
+{
+    if (device != EV_SPI1)
+    {
+      __builtin_software_breakpoint();
+      return;
+    }
 
+    PLIB_SPI_Enable(SPI_ID_1);
 }
+
 /** Send data through the given SPI device (if data>=0), and return the result
  * of the previous send (or -1). If data<0, no data is sent and the function
  * waits for data to be returned */
-int jshSPISend(IOEventFlags device, int data) {
-  return -1;
+int jshSPISend(IOEventFlags device, int data)
+{
+  uint8_t recv;
+
+  if (device != EV_SPI1)
+  {
+      __builtin_software_breakpoint();
+      return;
+  }
+
+//  __builtin_software_breakpoint();
+
+  if (data >= 0)
+  {
+    if (!PLIB_SPI_TransmitBufferIsFull(SPI_ID_1)) {
+        PLIB_SPI_BufferWrite(SPI_ID_1, (uint8_t)data);
+    }
+  }
+  else
+  {
+    while (!PLIB_SPI_ReceiverBufferIsFull(SPI_ID_1));
+  }
+  
+  recv = PLIB_SPI_BufferRead(SPI_ID_1);
+  
+  return recv;
 }
+
 /** Send 16 bit data through the given SPI device. */
-void jshSPISend16(IOEventFlags device, int data) {
+void jshSPISend16(IOEventFlags device, int data)
+{
+  if (device != EV_SPI1)
+  {
+      __builtin_software_breakpoint();
+      return;
+  }
 
+//  __builtin_software_breakpoint();
+
+  while (PLIB_SPI_TransmitBufferIsFull(SPI_ID_1));
+  PLIB_SPI_BufferWrite16bit(SPI_ID_1, (uint16_t)data);
 }
+
 /** Set whether to send 16 bits or 8 over SPI */
-void jshSPISet16(IOEventFlags device, bool is16) {
+void jshSPISet16(IOEventFlags device, bool is16)
+{
+  if (device != EV_SPI1)
+  {
+      __builtin_software_breakpoint();
+      return;
+  }
 
+//  __builtin_software_breakpoint();
+
+  if (is16)
+  {
+    PLIB_SPI_CommunicationWidthSelect(SPI_ID_1, SPI_COMMUNICATION_WIDTH_16BITS);
+  }
+  else
+  {
+    PLIB_SPI_CommunicationWidthSelect(SPI_ID_1, SPI_COMMUNICATION_WIDTH_8BITS);
+  }
 }
+
 /** Set whether to use the receive interrupt or not */
-void jshSPISetReceive(IOEventFlags device, bool isReceive) {
+void jshSPISetReceive(IOEventFlags device, bool isReceive)
+{
+  if (device != EV_SPI1)
+  {
+      __builtin_software_breakpoint();
+      return;
+  }
 
+  // TODO
+//  __builtin_software_breakpoint();
 }
-/** Wait until SPI send is finished, and flush all received data */
-void jshSPIWait(IOEventFlags device) {
 
+/** Wait until SPI send is finished, and flush all received data */
+void jshSPIWait(IOEventFlags device)
+{
+  if (device != EV_SPI1)
+  {
+      __builtin_software_breakpoint();
+      return;
+  }
+
+//  __builtin_software_breakpoint();
+  /* Loop until not sending */
+  while (PLIB_SPI_IsBusy(SPI_ID_1));
 }
 
 /** Set up I2C, if pins are -1 they will be guessed */
@@ -595,7 +676,7 @@ void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstan
 }
 void __ISR_AT_VECTOR(_UART2_FAULT_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartErrorInstance0(void)
 {
+//    __conditional_software_breakpoint(0);
     /* Clear pending interrupt */
     PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_ERROR);
-
 }

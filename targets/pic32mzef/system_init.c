@@ -205,6 +205,7 @@ void SYS_Initialize ( void* data )
 
     /* Initialize Drivers */
     DRV_USART0_Initialize();
+    DRV_SPI0_Initialize();
 
     /* Initialize System Services */
     SYS_INT_Initialize();  
