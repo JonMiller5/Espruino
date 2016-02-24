@@ -68,7 +68,7 @@ bool jswrap_waveform_idle() {
         if (!jstGetLastBufferTimerTask(buffer, &task)) {
           // if the timer task is now gone...
           JsVar *arrayBuffer = jsvObjectGetChild(waveform, "buffer", 0);
-          jsiQueueObjectCallbacks(waveform, "#onfinish", &arrayBuffer, 1);
+          jsiQueueObjectCallbacks(waveform, JS_EVENT_PREFIX"finish", &arrayBuffer, 1);
           jsvUnLock(arrayBuffer);
           running = false;
           jsvObjectSetChildAndUnLock(waveform, "running", jsvNewFromBool(running));
@@ -82,8 +82,8 @@ bool jswrap_waveform_idle() {
             if (oldBuffer != currentBuffer) {
               // buffers have changed - fire off a 'buffer' event with the buffer that needs to be filled
               jsvObjectSetChildAndUnLock(waveform, "currentBuffer", jsvNewFromInteger(currentBuffer));
-              JsVar *arrayBuffer = jsvObjectGetChild(waveform, (currentBuffer==0) ? "buffer" : "buffer2", 0);
-              jsiQueueObjectCallbacks(waveform, "#onbuffer", &arrayBuffer, 1);
+              JsVar *arrayBuffer = jsvObjectGetChild(waveform, (currentBuffer==0) ? "buffer2" : "buffer", 0);
+              jsiQueueObjectCallbacks(waveform, JS_EVENT_PREFIX"buffer", &arrayBuffer, 1);
               jsvUnLock(arrayBuffer);
             }
           }

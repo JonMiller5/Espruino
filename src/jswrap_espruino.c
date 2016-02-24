@@ -28,8 +28,28 @@ This is the built-in JavaScript class for Espruino utility functions.
  */
 
 /*JSON{
+  "type" : "event",
+  "class" : "E",
+  "name" : "init"
+}
+This event is called right after the board starts up, and has a similar effect
+to creating a function called `onInit`.
+
+For example to write `"Hello World"` every time Espruino starts, use:
+
+```
+E.on('init', function() {
+  console.log("Hello World!");
+});
+```
+
+**Note:** that subsequent calls to `E.on('init', ` will **add** a new handler,
+rather than replacing the last one. This allows you to write modular code -
+something that was not possible with `onInit`.
+ */
+
+/*JSON{
   "type" : "staticmethod",
-  "ifndef" : "SAVE_ON_FLASH",
   "class" : "E",
   "name" : "getTemperature",
   "generate_full" : "jshReadTemperature()",
@@ -677,6 +697,39 @@ JsVar *jswrap_espruino_toUint8Array(JsVar *args) {
   return arr;
 }
 
+/*JSON{
+  "type" : "staticmethod",
+  "class" : "E",
+  "name" : "memoryArea",
+  "generate" : "jswrap_espruino_memoryArea",
+  "params" : [
+    ["addr","int","The address of the memory area"],
+    ["len","int","The length (in bytes) of the memory area"]
+  ],
+  "return" : ["JsVar","A Uint8Array"],
+  "return_object" : "String"
+}
+This creates and returns a special type of string, which actually references
+a specific memory address. It can be used in order to use sections of
+Flash memory directly in Espruino (for example to execute code straight
+from flash memory with `eval(E.memoryArea( ... ))`)
+
+**Note:** This is only tested on STM32-based platforms (Espruino Original
+and Espruino Pico) at the moment.
+*/
+JsVar *jswrap_espruino_memoryArea(int addr, int len) {
+  if (len<0) return 0;
+  JsVar *v = jsvNewWithFlags(JSV_NATIVE_STRING);
+  if (len>65535) {
+    jsExceptionHere(JSET_ERROR, "Memory area too long! Max is 65535 bytes\n");
+    return 0;
+  }
+  v->varData.nativeStr.ptr = (char*)addr;
+  v->varData.nativeStr.len = (uint16_t)len;
+  return v;
+}
+
+
 
 /*JSON{
   "type" : "staticmethod",
@@ -722,16 +775,67 @@ void jswrap_espruino_dumpTimers() {
   "name" : "getSizeOf",
   "generate" : "jswrap_espruino_getSizeOf",
   "params" : [
-    ["v","JsVar","A variable to get the size of"]
+    ["v","JsVar","A variable to get the size of"],
+    ["depth","int","The depth that detail should be provided for. If depth<=0 or undefined, a single integer will be returned"]
   ],
-  "return" : ["int32","The number of variable 'blocks' as an integer"]
+  "return" : ["JsVar","Information about the variable size - see below"]
 }
-Return the number of Variable Blocks used by the supplied variable. This is useful if you're running out of memory and you want to be able to see what is taking up most of the available space.
+Return the number of variable blocks used by the supplied variable. This is
+useful if you're running out of memory and you want to be able to see what
+is taking up most of the available space.
+
+If `depth>0` and the variable can be recursed into, an array listing all property
+names (including internal Espruino names) and their sizes is returned. If
+`depth>1` there is also a `more` field that inspects the objects's children's
+children.
+
+For instance `E.getSizeOf(function(a,b) { })` returns `5`.
+
+But `E.getSizeOf(E.getSizeOf(function(a,b) { }), 1)` returns:
+
+```
+ [
+  {
+    "name": "a",
+    "size": 1 },
+  {
+    "name": "b",
+    "size": 1 },
+  {
+    "name": "\xFFcod",
+    "size": 2 }
+ ]
+```
+
+In this case setting depth to `2` will make no difference as there are
+no more children to traverse.
 
 See http://www.espruino.com/Internals for more information
  */
-int jswrap_espruino_getSizeOf(JsVar *v) {
-  return (int)jsvCountJsVarsUsed(v);
+JsVar *jswrap_espruino_getSizeOf(JsVar *v, int depth) {
+  if (depth>0 && jsvHasChildren(v)) {
+    JsVar *arr = jsvNewWithFlags(JSV_ARRAY);
+    if (!arr) return 0;
+    JsvObjectIterator it;
+    jsvObjectIteratorNew(&it, v);
+    while (jsvObjectIteratorHasValue(&it)) {
+      JsVar *key = jsvObjectIteratorGetKey(&it);
+      JsVar *val = jsvSkipName(key);
+      JsVar *item = jsvNewWithFlags(JSV_OBJECT);
+      if (item) {
+        jsvObjectSetChildAndUnLock(item, "name", jsvAsString(key, false));
+        jsvObjectSetChildAndUnLock(item, "size", jswrap_espruino_getSizeOf(key, 0));
+        if (depth>1 && jsvHasChildren(val))
+          jsvObjectSetChildAndUnLock(item, "more", jswrap_espruino_getSizeOf(val, depth-1));
+        jsvArrayPushAndUnLock(arr, item);
+      }
+      jsvUnLock2(val, key);
+      jsvObjectIteratorNext(&it);
+    }
+    jsvObjectIteratorFree(&it);
+    return arr;
+  }
+  return jsvNewFromInteger((JsVarInt)jsvCountJsVarsUsed(v));
 }
 
 /*JSON{
