@@ -61,7 +61,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 /*** DEVCFG0 ***/
 
 #pragma config DEBUG =      ON
-#pragma config JTAGEN =     OFF
+#pragma config JTAGEN =     ON
 #pragma config ICESEL =     ICS_PGx2
 #pragma config TRCEN =      OFF
 #pragma config BOOTISA =    MIPS32
@@ -205,7 +205,7 @@ void SYS_Initialize ( void* data )
 
     /* Initialize Drivers */
     DRV_USART0_Initialize();
-    DRV_SPI0_Initialize();
+//    DRV_SPI0_Initialize();
 
     /* Initialize System Services */
     SYS_INT_Initialize();  

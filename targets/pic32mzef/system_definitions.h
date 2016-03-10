@@ -61,7 +61,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include "peripheral/int/plib_int.h"
 #include "peripheral/spi/plib_spi.h"
 #include "system/ports/sys_ports.h"
-#include "driver/spi/drv_spi_static.h"
+//#include "driver/spi/drv_spi_static.h"
 
 
 #include "main.h"

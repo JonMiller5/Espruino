@@ -71,7 +71,7 @@ LOCAL void uart0_rx_intr_handler(void *para);
  * Parameters   : uart_no, use UART0 or UART1 defined ahead
  * Returns      : NONE
 *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR
+void ICACHE_FLASH_ATTR
 uart_config(uint8 uart_no)
 {
     if (uart_no == UART1){
@@ -235,7 +235,7 @@ void at_port_print(const char *str) __attribute__((alias("uart0_sendStr")));
  * Parameters   : void *para - point to ETS_UART_INTR_ATTACH's arg
  * Returns      : NONE
 *******************************************************************************/
-LOCAL ICACHE_RAM_ATTR void
+LOCAL CALLED_FROM_INTERRUPT void
 uart0_rx_intr_handler(void *para)
 {
     /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
@@ -339,7 +339,7 @@ uart_recvTask(os_event_t *events)
    //already move uart buffer output to uart empty interrupt
         //tx_start_uart_buffer(UART0);
     #else
-
+    // TODO: is this UART1 RX, or TX?
     #endif
     }
 }
@@ -381,11 +381,13 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
     #endif
 }
 
+#if 0
 void ICACHE_FLASH_ATTR
 uart_reattach()
 {
     uart_init(BIT_RATE_115200, BIT_RATE_115200);
 }
+#endif
 
 /******************************************************************************
  * FunctionName : uart_tx_one_char_no_wait
@@ -641,7 +643,7 @@ void tx_start_uart_buffer(uint8 uart_no)
 #endif
 
 
-static ICACHE_RAM_ATTR void uart_rx_intr_disable(uint8 uart_no)
+static CALLED_FROM_INTERRUPT void uart_rx_intr_disable(uint8 uart_no)
 {
 #if 1
     CLEAR_PERI_REG_MASK(UART_INT_ENA(uart_no), UART_RXFIFO_FULL_INT_ENA|UART_RXFIFO_TOUT_INT_ENA);

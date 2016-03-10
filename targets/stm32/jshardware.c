@@ -52,7 +52,7 @@
 unsigned short jshRTCPrescaler;
 unsigned short jshRTCPrescalerReciprocal; // (JSSYSTIME_SECOND << RTC_PRESCALER_RECIPROCAL_SHIFT) /  jshRTCPrescaler;
 #define RTC_PRESCALER_RECIPROCAL_SHIFT 10
-#define RTC_INITIALISE_TICKS 4 // SysTicks before we initialise the RTC - we need to wait until the LSE starts up properly
+#define RTC_INITIALISE_TICKS 8 // SysTicks before we initialise the RTC - we need to wait until the LSE starts up properly
 #define JSSYSTIME_EXTRA_BITS 8 // extra bits we shove on under the RTC (we try and get these from SysTick)
 #define JSSYSTIME_SECOND_SHIFT 20
 #define JSSYSTIME_SECOND (1<<JSSYSTIME_SECOND_SHIFT) // Random value we chose - the accuracy we're allowing (1 microsecond)
@@ -69,7 +69,7 @@ static JsSysTime jshGetTimeForSecond();
 Pin watchedPins[16];
 
 // Whether a pin is being used for soft PWM or not
-BITFIELD_DECL(jshPinSoftPWM, JSH_PIN_COUNT); // TODO: This should be set to all 0
+BITFIELD_DECL(jshPinSoftPWM, JSH_PIN_COUNT);
 
 // simple 4 byte buffers for SPI
 #define JSH_SPIBUF_MASK 3 // 4 bytes
@@ -269,7 +269,7 @@ static ALWAYS_INLINE uint8_t stmADCChannel(JsvPinInfoAnalog analog) {
 
 #ifdef STM32API2
 static ALWAYS_INLINE uint8_t functionToAF(JshPinFunction func) {
-#if defined(STM32F401xx)
+#if defined(STM32F401xx) || defined(STM32F411xx)
   assert(JSH_AF0==0 && JSH_AF15==15); // check mapping is right
   return  func & JSH_MASK_AF;
 #elif defined(STM32F4) || defined(STM32F2)
@@ -322,15 +322,15 @@ static ALWAYS_INLINE uint8_t functionToAF(JshPinFunction func) {
 }
 #endif
 
-static long long DEVICE_INITIALISED_FLAGS = 0L;
+static uint64_t DEVICE_INITIALISED_FLAGS = 0L;
 
 bool jshIsDeviceInitialised(IOEventFlags device) {
-  long long mask = 1L << (int)device;
+  uint64_t mask = 1ULL << (int)device;
   return (DEVICE_INITIALISED_FLAGS & mask) != 0L;
 }
 
 void jshSetDeviceInitialised(IOEventFlags device, bool isInit) {
-  long long mask = 1L << (int)device;
+  uint64_t mask = 1ULL << (int)device;
   if (isInit) {
     DEVICE_INITIALISED_FLAGS |= mask;
   } else {
@@ -652,13 +652,16 @@ bool hasSystemSlept;
 volatile JsSysTime SysTickMajor = SYSTICK_RANGE;
 #endif
 
+static bool jshIsRTCUsingLSE() {
+  return (RCC->BDCR & (RCC_RTCCLKSource_LSE|RCC_RTCCLKSource_LSI)) == RCC_RTCCLKSource_LSE;
+}
 
 static bool jshIsRTCAlreadySetup(bool andRunning) {
   if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0)
     return false; // RTC was off - return false
   if (!andRunning) return true;
   // Check what we're running the RTC off and make sure that it's running!
-  if ((RCC->BDCR & (RCC_RTCCLKSource_LSE|RCC_RTCCLKSource_LSI)) == RCC_RTCCLKSource_LSE)
+  if (jshIsRTCUsingLSE())
     return RCC_GetFlagStatus(RCC_FLAG_LSERDY) == SET;
   else
     return RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == SET;
@@ -670,12 +673,32 @@ void jshSetupRTCPrescaler(bool isUsingLSI) {
 #ifdef STM32F1
     jshRTCPrescaler = 40000; // 40kHz for LSI on F1 parts
 #else
-    jshRTCPrescaler = 32768; // 32kHz for LSI
+    jshRTCPrescaler = 32000; // 32kHz for LSI on F4
 #endif
   } else {
-    jshRTCPrescaler = 32768; // 32kHz for LSE
+    jshRTCPrescaler = 32768; // 32.768kHz for LSE
   }
   jshRTCPrescalerReciprocal = (unsigned short)((((unsigned int)JSSYSTIME_SECOND) << RTC_PRESCALER_RECIPROCAL_SHIFT) /  jshRTCPrescaler);
+}
+
+void jshSetupRTC(bool isUsingLSI) {
+  RCC_RTCCLKConfig(isUsingLSI ? RCC_RTCCLKSource_LSI : RCC_RTCCLKSource_LSE); // set clock source to low speed internal
+  jshSetupRTCPrescaler(isUsingLSI);
+  RCC_RTCCLKCmd(ENABLE); // enable RTC (in backup domain)
+  RTC_WaitForSynchro();
+#ifdef STM32F1
+  RTC_SetPrescaler(jshRTCPrescaler - 1U);
+  RTC_WaitForLastTask();
+#else
+  RTC_InitTypeDef RTC_InitStructure;
+  RTC_StructInit(&RTC_InitStructure);
+  //RTC_InitStructure.RTC_AsynchPrediv = 0x7F;
+  //RTC_InitStructure.RTC_SynchPrediv =  0xFF; /* (32KHz / (RTC_AsynchPrediv+1)) - 1 = 0xFF */
+  RTC_InitStructure.RTC_AsynchPrediv = 0;
+  RTC_InitStructure.RTC_SynchPrediv =  (uint32_t)(jshRTCPrescaler-1); // TODO: RTC_AsynchPrediv larger for power consumption - but then timestamps are less accurate
+  RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
+  RTC_Init(&RTC_InitStructure);
+#endif
 }
 #endif
 
@@ -690,56 +713,41 @@ void jshDoSysTick() {
     ticksSinceStart++;
  #ifdef USE_RTC
   if (ticksSinceStart==RTC_INITIALISE_TICKS) {
-    /* If RTC is already enabled, we've come back from a reset...
-     * we're going to want to keep everything as it was */
-    bool alreadySetup = jshIsRTCAlreadySetup(true);
-    /* LSEON, LSEBYP, RTCSEL and RTCEN are in backup domain so may not need
-     * changing */
-     
-    if (!alreadySetup) {
-      bool isUsingLSI = RCC_GetFlagStatus(RCC_FLAG_LSERDY)==RESET;
-      
-      if (RCC->BDCR & (RCC_RTCCLKSource_LSE|RCC_RTCCLKSource_LSI)) {
-        // Uh-oh - RTC *was* set up for something, but it's not
-        // the case any more. It needs totally resetting so we can change it
-        RCC_BackupResetCmd(ENABLE);
-        RCC_BackupResetCmd(DISABLE);
-	    RCC_LSEConfig(RCC_LSE_ON); // reset would have turned LSE off
-      }
-      
-      if (isUsingLSI) {
-        // LSE is not working - turn it off and use LSI
-        RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI); // set clock source to low speed internal
-        RCC_LSEConfig(RCC_LSE_OFF);  // disable low speed external oscillator
-      } else {
-        // LSE working! Yay! turn LSI off now
-        RCC_LSEConfig(RCC_LSE_ON);
-        RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE); // set clock source to low speed external
-        RCC_LSICmd(DISABLE); // disable low speed internal oscillator
-      }
-      jshSetupRTCPrescaler(isUsingLSI);
-      RCC_RTCCLKCmd(ENABLE); // enable RTC (in backup domain)
-      RTC_WaitForSynchro();
-  #ifdef STM32F1
-      RTC_SetPrescaler(jshRTCPrescaler - 1U);
-      RTC_WaitForLastTask();
-  #else
-      RTC_InitTypeDef RTC_InitStructure;
-      RTC_StructInit(&RTC_InitStructure);
-      //RTC_InitStructure.RTC_AsynchPrediv = 0x7F;
-      //RTC_InitStructure.RTC_SynchPrediv =  0xFF; /* (32KHz / (RTC_AsynchPrediv+1)) - 1 = 0xFF */
-      RTC_InitStructure.RTC_AsynchPrediv = 0;
-      RTC_InitStructure.RTC_SynchPrediv =  (uint32_t)(jshRTCPrescaler-1); // TODO: RTC_AsynchPrediv larger for power consumption - but then timestamps are less accurate
-      RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
-      RTC_Init(&RTC_InitStructure);
-  #endif
-    } else { // alreadySetup
-      // Already set up, so just turn off the relevant oscillator
-      if ((RCC->BDCR & (RCC_RTCCLKSource_LSE|RCC_RTCCLKSource_LSI)) == RCC_RTCCLKSource_LSE) {
-        RCC_LSICmd(DISABLE);
-      } else {
-        RCC_LSEConfig(RCC_LSE_OFF);
-      }
+    // Use LSI if the LSE hasn't stabilised
+    bool isUsingLSI = RCC_GetFlagStatus(RCC_FLAG_LSERDY)==RESET;
+
+    // If the RTC is already doing the right thing, do nothing
+    if (isUsingLSI == jshIsRTCUsingLSE()) {
+      // We just set the RTC up, so we have to reset the
+      // backup domain again to change sources :(
+#ifdef STM32F1
+      uint32_t time = RTC_GetCounter();
+#else
+      RTC_TimeTypeDef time;
+      RTC_DateTypeDef date;
+      RTC_GetTime(RTC_Format_BIN, &time);
+      RTC_GetDate(RTC_Format_BIN, &date);
+#endif
+      RCC_BackupResetCmd(ENABLE);
+      RCC_BackupResetCmd(DISABLE);
+      RCC_LSEConfig(RCC_LSE_ON); // reset would have turned LSE off
+#ifdef STM32F1
+      RTC_SetCounter(time);
+#else
+      RTC_SetDate(RTC_Format_BIN, &date);
+      RTC_SetTime(RTC_Format_BIN, &time);
+#endif
+      jshSetupRTC(isUsingLSI);
+    }
+
+    // Disable RTC clocks depending on what we decided...
+    if (isUsingLSI) {
+      // LSE is not working - turn it off and use LSI
+      RCC_LSEConfig(RCC_LSE_OFF);  // disable low speed external oscillator
+    } else {
+      // LSE working! Yay! turn LSI off now
+      RCC_LSEConfig(RCC_LSE_ON);
+      RCC_LSICmd(DISABLE); // disable low speed internal oscillator
     }
   }
 
@@ -784,7 +792,7 @@ void jshDoSysTick() {
 
   /* One second after start, call jsinteractive. This is used to swap
    * to USB (if connected), or the Serial port. */
-  if (ticksSinceStart > 3) {
+  if (ticksSinceStart == 5) {
     jsiOneSecondAfterStartup();
   }
 }
@@ -984,6 +992,7 @@ void jshInit() {
   // reset some vars
   for (i=0;i<16;i++)
     watchedPins[i] = PIN_UNDEFINED;
+  BITFIELD_CLEAR(jshPinSoftPWM);
 
   // enable clocks
  #if defined(STM32F3)
@@ -1065,9 +1074,11 @@ void jshInit() {
     RCC_BackupResetCmd(DISABLE);
     // Turn both LSI(above) and LSE clock on - in a few SysTicks we'll check if LSE is ok and use that if possible
     RCC_LSEConfig(RCC_LSE_ON); // try and start low speed external oscillator - it can take a while
+    // Initially set the RTC up to use the internal oscillator
+    jshSetupRTC(true);
   }
-  // set yp the RTC prescaler for now, so at least we can get some sensible numbers as it starts
-  jshSetupRTCPrescaler((RCC->BDCR & (RCC_RTCCLKSource_LSE|RCC_RTCCLKSource_LSI)) == RCC_RTCCLKSource_LSI);
+  // set up the RTC prescaler for now, so at least we can get some sensible numbers as it starts
+  jshSetupRTCPrescaler(!jshIsRTCUsingLSE());
 #endif
 
   // initialise button
@@ -1103,7 +1114,15 @@ void jshInit() {
 
 #ifdef SWD_ONLY_NO_JTAG
   // reclaim A13 and A14
+#ifdef STM32F1
   GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE); // Disable JTAG so pins are available for LEDs
+#else
+  // On F2/F4, JTAG is just AF0
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_SPI1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource14, GPIO_AF_SPI1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource13, GPIO_AF_SPI1);
+#endif
+
 #else
 #ifdef STM32F1
 #ifndef DEBUG
@@ -1227,6 +1246,7 @@ void jshInit() {
 }
 
 void jshReset() {
+  jshResetDevices();
   Pin i;
   for (i=0;i<JSH_PIN_COUNT;i++) {
 #ifdef DEFAULT_CONSOLE_TX_PIN
@@ -1692,7 +1712,7 @@ JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, Js
 
     // Otherwise
     jshPrintCapablePins(pin, "PWM Output", JSH_TIMER1, JSH_TIMERMAX, 0,0, false);
-  #if defined(DACS) && DACS>0
+  #if defined(DAC_COUNT) && DAC_COUNT>0
     jsiConsolePrint("\nOr pins with DAC output are:\n");
     jshPrintCapablePins(pin, 0, JSH_DAC, JSH_DAC, 0,0, false);
     jsiConsolePrint("\n");
@@ -1703,7 +1723,7 @@ JshPinFunction jshPinAnalogOutput(Pin pin, JsVarFloat value, JsVarFloat freq, Js
   }
 
   if (JSH_PINFUNCTION_IS_DAC(func)) {
-#if defined(DACS) && DACS>0
+#if defined(DAC_COUNT) && DAC_COUNT>0
     // Special case for DAC output
     uint16_t data = (uint16_t)(value*0xFFFF);
     if ((func & JSH_MASK_INFO)==JSH_DAC_CH1) {
@@ -1901,15 +1921,14 @@ void *NO_INLINE checkPinsForDevice(JshPinFunction device, int count, Pin *pins, 
 }
 
 void jshUSARTSetup(IOEventFlags device, JshUSARTInfo *inf) {
+  assert(DEVICE_IS_USART(device));
+
   jshSetDeviceInitialised(device, true);
 
   jshSetFlowControlEnabled(device, inf->xOnXOff);
 
-  if (device == EV_USBSERIAL) {
-    return; // eep!
-  }
-
   JshPinFunction funcType = jshGetPinFunctionFromDevice(device);
+  if (funcType==0) return; // not a proper serial port, ignore it
 
   Pin pins[3] = { inf->pinRX, inf->pinTX, inf->pinCK };
   JshPinFunction functions[3] = { JSH_USART_RX, JSH_USART_TX, JSH_USART_CK };
@@ -2324,7 +2343,7 @@ void jshSetUSBPower(bool isOn) {
   if (isOn) {
     USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;
     USBD_Start(&hUsbDeviceFS);
-  } else {    
+  } else {
     USBD_Stop(&hUsbDeviceFS);
     USB_OTG_FS->GCCFG &= ~(USB_OTG_GCCFG_VBUSBSEN);
   }
@@ -2610,7 +2629,7 @@ JshPinFunction jshGetCurrentPinFunction(Pin pin) {
 // Given a pin function, set that pin to the 16 bit value (used mainly for DACs and PWM)
 void jshSetOutputValue(JshPinFunction func, int value) {
   if (JSH_PINFUNCTION_IS_DAC(func)) {
-#if DACS>0
+#if DAC_COUNT>0
     uint16_t dacVal = (uint16_t)value;
     switch (func & JSH_MASK_INFO) {
     case JSH_DAC_CH1:  DAC_SetChannel1Data(DAC_Align_12b_L, dacVal); break;
@@ -2664,10 +2683,10 @@ void jshEnableWatchDog(JsVarFloat timeout) {
     IWDG_Enable();
 }
 
-uint32_t *jshGetPinAddress(Pin pin, JshGetPinAddressFlags flags) {
+volatile uint32_t *jshGetPinAddress(Pin pin, JshGetPinAddressFlags flags) {
   if (!jshIsPinValid(pin)) return 0;
   GPIO_TypeDef *port = stmPort(pin);
-  uint32_t *regAddr;
+  volatile uint32_t *regAddr;
   if (flags == JSGPAF_INPUT)
     regAddr = &port->IDR;
   else
@@ -2681,14 +2700,16 @@ uint32_t *jshGetPinAddress(Pin pin, JshGetPinAddressFlags flags) {
 
 #if defined(STM32F2) || defined(STM32F4)
 int jshFlashGetSector(uint32_t addr) {
-  addr -= FLASH_START;
 #ifdef FLASH_END // supplied by stm32fXXX.h
-  if (FLASH_START+addr > FLASH_END) return -1;
+  if (addr > FLASH_END) return -1;
 #else
   // else use what's in BOARD.py - could be less than the
   // chip might be capable of (but not specced for ;)
-  if (addr >= FLASH_TOTAL) return -1;
+  if (addr >= FLASH_TOTAL+FLASH_START) return -1;
 #endif
+  if (addr < FLASH_START) return -1;
+  addr -= FLASH_START;
+
   if (addr<16*1024) return FLASH_Sector_0;
   else if (addr<32*1024) return FLASH_Sector_1;
   else if (addr<48*1024) return FLASH_Sector_2;
