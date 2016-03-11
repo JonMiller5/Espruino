@@ -1566,8 +1566,8 @@ SOURCES +=                                                                     \
   $(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon.c \
   $(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon_pic32mz.c \
   $(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk/bsp_sys_init.c \
-  $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c
-#  targets/pic32mzef/framework/driver/spi/drv_spi_static.c
+  $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c \
+  targets/pic32mzef/framework/driver/spi/drv_spi_static.c
 
 LDFLAGS += -g -Os -mdebugger -Wl,--defsym=_DEBUGGER=1 \
   -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
