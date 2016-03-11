@@ -729,7 +729,7 @@ ifdef __JS_DEBUG
  ifdef EFM32
   DEFINES += -DDEBUG_EFM=1 -D__JS_DEBUG=1
  endif
-DEFINES+=-DDEBUG
+DEFINES+=-D__JS_DEBUG
 endif
 
 ifdef PROFILE
@@ -1539,10 +1539,13 @@ endif
 
 ifdef MPLABXC32
 ifndef MICROCHIP_HARMONY_PATH
-MICROCHIP_HARMONY_PATH=/Users/c11067/microchip/harmony/v1_06
+MICROCHIP_HARMONY_PATH=$(HOME)/microchip/harmony/v1_07
 endif
 F_CPU = 200000000
 FORMAT = ihex
+ifdef __JS_DEBUG
+DEFINES += -D__JS_DEBUG=1
+endif
 ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -Wall -Wextra -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align -DUNALIGNED_SUPPORT_DISABLE -save-temps=obj
 INCLUDE +=                                      \
   -I$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk \
@@ -1564,9 +1567,9 @@ SOURCES +=                                                                     \
   $(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon_pic32mz.c \
   $(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk/bsp_sys_init.c \
   $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c
-  targets/pic32mzef/framework/driver/spi/drv_spi_static.c
+#  targets/pic32mzef/framework/driver/spi/drv_spi_static.c
 
-LDFLAGS += -g -O1 -mdebugger -Wl,--defsym=_DEBUGGER=1 \
+LDFLAGS += -g -Os -mdebugger -Wl,--defsym=_DEBUGGER=1 \
   -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
   -Wl,--report-mem -mreserve=data@0x0:0x37F \
   -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFM144_peripherals.a,--end-group \
@@ -1995,7 +1998,9 @@ $(PROJ_NAME).bin : $(PROJ_NAME).elf
 	@echo $(call $(quiet_)obj_to_bin,binary,bin)
 	@$(call obj_to_bin,binary,bin)
 ifndef TRAVIS
+ifndef MPLABXC32
 	bash scripts/check_size.sh $(PROJ_NAME).bin
+endif
 endif
 
 proj: $(PROJ_NAME).lst $(PROJ_NAME).bin $(PROJ_NAME).hex espruino.elf

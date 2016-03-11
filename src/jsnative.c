@@ -20,8 +20,12 @@
 
 #define MAX_ARGS 12
 
-#if defined(__i386__) || defined(__x86_64__) || defined(__mips_hard_float)
+#if defined(__i386__) || defined(__x86_64__)
     #define USE_X86_CDECL // cdecl on x86 puts FP args elsewhere!
+#endif
+
+#if defined (__mips_hard_float)
+    #define USE_FLOAT_RETURN_FIX
 #endif
 
 #if defined(__WORDSIZE) && __WORDSIZE == 64
@@ -151,7 +155,7 @@ JsVar *jsnCallFunction(void *function, JsnArgumentType argumentSpecifier, JsVar 
 
   // When args<=4 on ARM, everything is passed in registers (so we try and do this case first)
   if (argCount<=4) {
-#ifdef USE_X86_CDECL
+#if defined(USE_X86_CDECL)
     assert(doubleCount<=4);
     if (doubleCount) {
       if (returnType==JSWAT_JSVARFLOAT) {
@@ -231,35 +235,44 @@ JsVar *jsnCallFunction(void *function, JsnArgumentType argumentSpecifier, JsVar 
 
 JsVarFloat sanity_pi() { return 3.141592; }
 int32_t sanity_int_pass(int32_t hello) { return (hello*10)+5; }
-int32_t sanity_int_flt_int(int32_t a, JsVarFloat b, int32_t c) {
+
+int32_t __attribute__((optimize("-O0"), noinline)) sanity_int_flt_int(int32_t a, JsVarFloat b, int32_t c) {
   return a + (int32_t)(b*100) + c*10000;
 }
 
-
-volatile unsigned   int testval;
 /** Perform sanity tests to ensure that  jsnCallFunction is working as expected */
 void jsnSanityTest() {
   JsVar *args[4];
 
-
   if (jsvGetFloatAndUnLock(jsnCallFunction(sanity_pi, JSWAT_JSVARFLOAT, 0, 0, 0)) != 3.141592)
-    jsiConsolePrint("WARNING: jsnative.c sanity check failed (returning double values)");
+  {
+      jsiConsolePrint("WARNING: jsnative.c sanity check failed (returning double values)");
+#if defined(__JS_DEBUG) && defined(__XC32)
+      __builtin_software_breakpoint();
+#endif
+  }
 
   args[0] = jsvNewFromInteger(1234);
   if (jsvGetIntegerAndUnLock(jsnCallFunction(sanity_int_pass, JSWAT_INT32|(JSWAT_INT32<<JSWAT_BITS), 0, args, 1)) != 12345)
+  {
       jsiConsolePrint("WARNING: jsnative.c sanity check failed (simple integer passing)");
+#if defined(__JS_DEBUG) && defined(__XC32)
+       __builtin_software_breakpoint();
+#endif
+  }
   jsvUnLock(args[0]);
 
   args[0] = jsvNewFromInteger(56);
   args[1] = jsvNewFromFloat(34);
   args[2] = jsvNewFromInteger(12);
 
-    testval = jsvGetIntegerAndUnLock(jsnCallFunction(sanity_int_flt_int, JSWAT_INT32|
-              (JSWAT_INT32<<(JSWAT_BITS*1))|(JSWAT_JSVARFLOAT<<(JSWAT_BITS*2))|
-            (JSWAT_INT32<<(JSWAT_BITS*3)), 0, args, 3));
-       __builtin_software_breakpoint();
   if (jsvGetIntegerAndUnLock(jsnCallFunction(sanity_int_flt_int, JSWAT_INT32|(JSWAT_INT32<<(JSWAT_BITS*1))|(JSWAT_JSVARFLOAT<<(JSWAT_BITS*2))|(JSWAT_INT32<<(JSWAT_BITS*3)), 0, args, 3)) != 123456)
+  {
       jsiConsolePrint("WARNING: jsnative.c sanity check failed (int-float-int passing)");
+#if defined(__JS_DEBUG) && defined(__XC32)
+       __builtin_software_breakpoint();
+#endif
+  }
   jsvUnLockMany(3, args);
 }
 
