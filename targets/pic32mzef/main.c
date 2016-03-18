@@ -16,7 +16,11 @@
 #include "jshardware.h"
 #include "main.h"
 
+#include "system_config.h"
+#include "system_definitions.h"
+
 int main() {
+
   jshInit();
   jsvInit();
   jsiInit(false);
@@ -24,6 +28,15 @@ int main() {
 
   while (1)
   {
+      /* Maintain system services */
+      //SYS_DEVCON_Tasks(sysObj.sysDevcon);
+
+      /* Maintain Device Drivers */
+
+      /* Maintain Middleware & Other Libraries */
+      GFX_Tasks(sysObj.gfxObject0);
+      GFX_HGC_Tasks(sysObj.gfxObject0);
+      
     jsiLoop();
   }
   //jsiKill();

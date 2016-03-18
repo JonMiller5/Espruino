@@ -50,6 +50,8 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include "system_config.h"
 #include "system_definitions.h"
 
+#include "driver/usart/drv_usart_static.h"
+
 
 // ****************************************************************************
 // ****************************************************************************
@@ -132,9 +134,28 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // Section: Driver Initialization Data
 // *****************************************************************************
 // *****************************************************************************
+// <editor-fold defaultstate="collapsed" desc="DRV_GFX Initialization Data">
+/*** DRV GFX Initialization Data ***/
 
-//<editor-fold defaultstate="collapsed" desc="DRV_USART Initialization Data">
+DRV_GFX_INIT drvGfxInit =
+{
+    .orientation             = DISP_ORIENTATION,
+    .horizontalResolution    = DISP_HOR_RESOLUTION,
+    .verticalResolution      = DISP_VER_RESOLUTION,
+    .dataWidth               = DISP_DATA_WIDTH,
+    .horizontalPulseWidth    = DISP_HOR_PULSE_WIDTH,
+    .horizontalBackPorch     = DISP_HOR_BACK_PORCH,
+    .horizontalFrontPorch    = DISP_HOR_FRONT_PORCH,
+    .verticalPulseWidth      = DISP_VER_PULSE_WIDTH,
+    .verticalBackPorch       = DISP_VER_BACK_PORCH,
+    .verticalFrontPorch      = DISP_VER_FRONT_PORCH,
+    .logicShift              = DISP_INV_LSHIFT,
+    .LCDType                 = 1,
+    .colorType               = 0,
+    .TCON_Init               = TCON_MODULE,
+};
 
+GFX_COLOR __attribute__((coherent, aligned(16))) frameBuffer[1][DISP_HOR_RESOLUTION][DISP_VER_RESOLUTION];
 // </editor-fold>
 
 // *****************************************************************************
@@ -166,7 +187,31 @@ const SYS_DEVCON_INIT sysDevconInit =
 };
 
 // </editor-fold>
+//<editor-fold defaultstate="collapsed" desc="SYS_DMA Initialization Data">
+/*** System DMA Initialization Data ***/
 
+const SYS_DMA_INIT sysDmaInit =
+{
+	.sidl = SYS_DMA_SIDL_DISABLE,
+
+};
+// </editor-fold>
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: Library/Stack Initialization Data
+// *****************************************************************************
+// *****************************************************************************
+// <editor-fold defaultstate="collapsed" desc="Graphics Library Initialization Data">
+/*** GFX Initialization Data ***/
+
+ const GFX_INIT gfxInit0 =
+{
+    .drvInitialize    = NULL,
+    .drvOpen          = DRV_GFX_LCC_Open,
+    .drvInterfaceSet  = DRV_GFX_LCC_InterfaceSet,
+    .preemptionLevel  = GFX_SELF_PREEMPTION_LEVEL
+};
 
 // *****************************************************************************
 // *****************************************************************************
@@ -204,11 +249,35 @@ void SYS_Initialize ( void* data )
     BSP_Initialize();
 
     /* Initialize Drivers */
+    
+
+#if 1
+    sysObj.sysDma = SYS_DMA_Initialize((SYS_MODULE_INIT *)&sysDmaInit);
+    SYS_INT_VectorPrioritySet(INT_VECTOR_DMA0, INT_PRIORITY_LEVEL2);
+    SYS_INT_VectorSubprioritySet(INT_VECTOR_DMA0, INT_SUBPRIORITY_LEVEL0);
+
+    SYS_INT_SourceEnable(INT_SOURCE_DMA_0);
+
+    DRV_GFX_LCC_FrameBufferAddressSet(&frameBuffer);
+    DRV_GFX_LCC_Initialize(GFX_INDEX_0, (SYS_MODULE_INIT*)&drvGfxInit);
+    
+    /* Setting priority for LCC Refresh ISR */
+    SYS_INT_VectorPrioritySet(INT_VECTOR_DMA1, INT_PRIORITY_LEVEL5);
+    #endif
+
     DRV_USART0_Initialize();
 //    DRV_SPI0_Initialize();
 
     /* Initialize System Services */
     SYS_INT_Initialize();  
+    
+    /* Initialize Middleware */
+#if 1
+    sysObj.gfxObject0 = GFX_Initialize(GFX_INDEX_0, (SYS_MODULE_INIT *)&gfxInit0);
+    
+    /* Initialize the GFX HGC */
+    GFX_HGC_Initialize();
+#endif
 
     /* Initialize Middleware */
     /* Enable Global Interrupts */

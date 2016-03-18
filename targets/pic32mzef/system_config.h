@@ -136,6 +136,62 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // *****************************************************************************
 // *****************************************************************************
 
+#define GFX_USE_DISPLAY_CONTROLLER_LCC
+#define DRV_GFX_LCC_INTERNAL_MEMORY
+#define DRV_GFX_LCC_DMA_CHANNEL_INDEX                 DMA_CHANNEL_1
+#define DRV_GFX_LCC_DMA_TRIGGER_SOURCE                DMA_TRIGGER_TIMER_5
+#define DRV_GFX_LCC_DMA_TRANSFER_LENGTH               2
+#define DRV_GFX_LCC_TMR_INDEX                         TMR_ID_5
+
+/*** Graphics Display Configuration ***/
+
+
+#define DISP_ORIENTATION                        0
+#define DISP_HOR_RESOLUTION                     480
+#define DISP_VER_RESOLUTION                     272
+#define DISP_DATA_WIDTH			                24
+#define DISP_HOR_PULSE_WIDTH                    41
+#define DISP_HOR_BACK_PORCH                     2
+#define DISP_HOR_FRONT_PORCH                    2
+#define DISP_VER_PULSE_WIDTH                    10
+#define DISP_VER_BACK_PORCH                     2
+#define DISP_VER_FRONT_PORCH                    2
+#define DISP_INV_LSHIFT                         0
+#define GFX_LCD_TYPE                            GFX_LCD_TFT
+#define BACKLIGHT_ENABLE_LEVEL                  1
+#define BACKLIGHT_DISABLE_LEVEL                 0
+#define TCON_MODULE                             NULL
+
+// DOM-IGNORE-END
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: Middleware & Other Library Configuration
+// *****************************************************************************
+// *****************************************************************************
+
+
+/*** GFX Library Configuration ***/
+
+#define GFX_INSTANCES_NUMBER                            1
+#define GFX_SELF_PREEMPTION_LEVEL                       0
+#define GFX_CONFIG_COLOR_DEPTH                          16
+
+#define GFX_CONFIG_FONT_CHAR_SIZE                       8
+#define GFX_CONFIG_FONT_EXTERNAL_DISABLE
+#define GFX_CONFIG_FONT_RAM_DISABLE
+#define GFX_CONFIG_IMAGE_EXTERNAL_DISABLE
+#define GFX_CONFIG_IMAGE_RAM_DISABLE
+#define GFX_CONFIG_ALPHABLEND_DISABLE
+#define GFX_CONFIG_GRADIENT_DISABLE
+#define GFX_CONFIG_PALETTE_DISABLE
+#define GFX_CONFIG_FONT_ANTIALIASED_DISABLE
+#define GFX_CONFIG_TRANSPARENT_COLOR_DISABLE
+#define GFX_CONFIG_PALETTE_EXTERNAL_DISABLE
+#define GFX_CONFIG_DOUBLE_BUFFERING_DISABLE
+#define GFX_CONFIG_USE_KEYBOARD_DISABLE
+#define GFX_CONFIG_USE_TOUCHSCREEN_DISABLE
+#define GFX_CONFIG_GOL_DISABLE
 
 
 // *****************************************************************************

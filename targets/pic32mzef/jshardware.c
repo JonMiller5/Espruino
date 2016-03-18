@@ -625,7 +625,7 @@ unsigned int jshGetRandomNumber() {
   return 0;
 }
 
-void __ISR_AT_VECTOR(_CORE_TIMER_VECTOR, IPL6SRS) __attribute__((no_fpu)) CoreTimerHandler(void)
+void __ISR_AT_VECTOR(_CORE_TIMER_VECTOR, IPL6SRS) CoreTimerHandler(void)
 {
     unsigned long old_count, period;
     old_count = _CP0_GET_COUNT();
@@ -643,7 +643,7 @@ void __ISR_AT_VECTOR(_CORE_TIMER_VECTOR, IPL6SRS) __attribute__((no_fpu)) CoreTi
 }
 
 
-void __ISR_AT_VECTOR(_UART2_TX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartTransmitInstance0(void)
+void __ISR_AT_VECTOR(_UART2_TX_VECTOR, IPL1SRS) _IntHandlerDrvUsartTransmitInstance0(void)
 {
 
 
@@ -652,6 +652,7 @@ void __ISR_AT_VECTOR(_UART2_TX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHand
     /* Clear pending interrupt */
     PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_TRANSMIT);
 }
+
 void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstance0(void)
 {
     /* TODO: Add code to process interrupt here */
@@ -674,7 +675,8 @@ void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstan
     }
 
 }
-void __ISR_AT_VECTOR(_UART2_FAULT_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartErrorInstance0(void)
+
+void __ISR_AT_VECTOR(_UART2_FAULT_VECTOR, IPL1SRS) _IntHandlerDrvUsartErrorInstance0(void)
 {
 //    __conditional_software_breakpoint(0);
     /* Clear pending interrupt */

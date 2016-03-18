@@ -36,7 +36,7 @@
     This enumeration defines the valid application states.  These states
     determine the behavior of the application at various times.
 */
-
+#if 1
 typedef enum
 {
     /* USART Enable State */
@@ -53,7 +53,7 @@ typedef enum
 
 } APP_STATES;
 
-
+#endif
 
 
 

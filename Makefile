@@ -157,7 +157,6 @@ OPTIMIZEFLAGS+=-Os
 else ifdef PIC32MZ_EF_STARTERKIT
 EMBEDDED=1
 BOARD=PIC32MZ_EF_STARTERKIT
-OPTIMIZEFLAGS+=-O1
 MPLABXC32=1
 PIC32MZ_EF_SK_USART=1
 XC32PROCESSOR=32MZ2048EFM144
@@ -1539,14 +1538,44 @@ endif
 
 ifdef MPLABXC32
 ifndef MICROCHIP_HARMONY_PATH
-MICROCHIP_HARMONY_PATH=$(HOME)/microchip/harmony/v1_07
+MICROCHIP_HARMONY_PATH=$(HOME)/microchip/harmony/v1_07_01
 endif
 F_CPU = 200000000
 FORMAT = ihex
+OPTIMIZEFLAGS += -Og -fno-common -fno-exceptions -fdata-sections -ffunction-sections
 ifdef __JS_DEBUG
 DEFINES += -D__JS_DEBUG=1
 endif
-ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -Wall -Wextra -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -Werror=cast-align -DUNALIGNED_SUPPORT_DISABLE -save-temps=obj
+ARCHFLAGS += -DF_CPU=$(F_CPU) -mprocessor=$(XC32PROCESSOR) -g3 -mdebugger -Wall -Wextra -fno-short-double -funsigned-char -funsigned-bitfields -fno-pack-struct -fno-short-enums -DUNALIGNED_SUPPORT_DISABLE
+
+# -Werror=cast-align
+
+# PIC32 Multimedia Expansion Board II
+ifdef PIC32MZ_EF_SK_MEB2
+MICROCHIP_PIC32_MEB2_GFX_PRIMITIVES=$(MICROCHIP_HARMONY_PATH)/apps/gfx/primitive/firmware
+INCLUDE += \
+  -I./targets/pic32mzef/framework/mebii \
+  -I./targets/pic32mzef/libs/harmony/gfx/primitives/pic32mz_ef_sk_meb2/\
+  -I$(MICROCHIP_HARMONY_PATH)/framework \
+  -I$(MICROCHIP_HARMONY_PATH)/framework/gfx \
+  -I$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk+meb2
+
+SOURCES += \
+  $(MICROCHIP_HARMONY_PATH)/framework/gfx/src/gfx.c \
+  $(MICROCHIP_HARMONY_PATH)/framework/gfx/src/gfx_primitive.c \
+  $(MICROCHIP_HARMONY_PATH)/framework/system/dma/src/sys_dma.c \
+  $(MICROCHIP_HARMONY_PATH)/framework/driver/gfx/controller/lcc/src/drv_gfx_lcc_int_pe.c \
+  ./targets/pic32mzef/libs/harmony/gfx/primitives/pic32mz_ef_sk_meb2/gfx_hgc_definitions.c \
+  ./targets/pic32mzef/libs/harmony/gfx/primitives/pic32mz_ef_sk_meb2/gfx_resources_int_reference.c \
+  ./targets/pic32mzef/libs/harmony/gfx/primitives/pic32mz_ef_sk_meb2/gfx_resources_int.S \
+  ./targets/pic32mzef/libs/harmony/gfx/primitives/pic32mz_ef_sk_meb2/system_interrupt.c
+
+  
+INCLUDE += -I./targets/pic32mzef/libs/harmony/gfx
+WRAPPERSOURCES += ./targets/pic32mzef/libs/harmony/gfx/jswrap_harmony_gfx.c
+
+endif
+
 INCLUDE +=                                      \
   -I$(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk \
   -I$(MICROCHIP_HARMONY_PATH)/framework \
@@ -1555,26 +1584,30 @@ INCLUDE +=                                      \
   -I./targets/pic32mzef/framework/system/clk \
   -I./targets/pic32mzef/framework/driver/usart \
   -I./targets/pic32mzef/framework/driver/spi
-OPTIMIZEFLAGS += -O1 -fno-common -fno-exceptions -fdata-sections -ffunction-sections
+
 SOURCES +=                                                                     \
   targets/pic32mzef/main.c                                                     \
   targets/pic32mzef/jshardware.c                                               \
   targets/pic32mzef/system_init.c \
+  targets/pic32mzef/gen_exception.c \
   targets/pic32mzef/framework/system/clk/src/sys_clk_static.c \
   targets/pic32mzef/framework/system/ports/src/sys_ports_static.c \
   targets/pic32mzef/framework/driver/usart/drv_usart_static.c \
+  targets/pic32mzef/framework/driver/spi/drv_spi_static.c \
   $(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon.c \
   $(MICROCHIP_HARMONY_PATH)/framework/system/devcon/src/sys_devcon_pic32mz.c \
   $(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk/bsp_sys_init.c \
-  $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c \
-  targets/pic32mzef/framework/driver/spi/drv_spi_static.c
+  $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c
+  
 
 LDFLAGS += -g -Os -mdebugger -Wl,--defsym=_DEBUGGER=1 \
-  -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
+  -Wl,--defsym=_min_stack_size=0x10000,--defsym=_min_heap_size=0x10000 \
   -Wl,--report-mem -mreserve=data@0x0:0x37F \
   -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFM144_peripherals.a,--end-group \
   -Wl,--gc-sections
 export CCPREFIX=xc32-
+
+
 endif
 
 ifdef ARM
