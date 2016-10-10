@@ -1539,7 +1539,7 @@ endif
 
 ifdef MPLABXC32
 ifndef MICROCHIP_HARMONY_PATH
-MICROCHIP_HARMONY_PATH=$(HOME)/microchip/harmony/v1_07
+MICROCHIP_HARMONY_PATH=$(HOME)/microchip/harmony/v1_08_01
 endif
 F_CPU = 200000000
 FORMAT = ihex
