@@ -6,13 +6,13 @@
 
 # Macros
 TOP=`pwd`
-CND_CONF=chipKIT WiFire
+CND_CONF=wifire
 CND_DISTDIR=dist
 TMPDIR=build/${CND_CONF}/${IMAGE_TYPE}/tmp-packaging
 TMPDIRNAME=tmp-packaging
-OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/harmony-configurator.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-OUTPUT_BASENAME=harmony-configurator.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
-PACKAGE_TOP_DIR=harmony-configurator.x/
+OUTPUT_PATH=dist/${CND_CONF}/${IMAGE_TYPE}/Harmony-MHC.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+OUTPUT_BASENAME=Harmony-MHC.X.${IMAGE_TYPE}.${OUTPUT_SUFFIX}
+PACKAGE_TOP_DIR=harmony-mhc.x/
 
 # Functions
 function checkReturnCode
@@ -57,15 +57,15 @@ mkdir -p ${TMPDIR}
 
 # Copy files and create directories and links
 cd "${TOP}"
-makeDirectory ${TMPDIR}/harmony-configurator.x/bin
+makeDirectory ${TMPDIR}/harmony-mhc.x/bin
 copyFileToTmpDir "${OUTPUT_PATH}" "${TMPDIR}/${PACKAGE_TOP_DIR}bin/${OUTPUT_BASENAME}" 0755
 
 
 # Generate tar file
 cd "${TOP}"
-rm -f ${CND_DISTDIR}/${CND_CONF}/package/harmony-configurator.x.tar
+rm -f ${CND_DISTDIR}/${CND_CONF}/package/harmony-mhc.x.tar
 cd ${TMPDIR}
-tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/harmony-configurator.x.tar *
+tar -vcf ../../../../${CND_DISTDIR}/${CND_CONF}/package/harmony-mhc.x.tar *
 checkReturnCode
 
 # Cleanup

@@ -24,14 +24,14 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=harmony-configurator.X
+PROJECTNAME=Harmony-MHC.X
 
 # Active Configuration
-DEFAULTCONF=chipKIT WiFire
+DEFAULTCONF=wifire
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=chipKIT WiFire 
+ALLCONFS=wifire 
 
 
 # build
@@ -45,13 +45,13 @@ ALLCONFS=chipKIT WiFire
 
 # clobber
 .clobber-impl: .clobber-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=chipKIT WiFire clean
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=wifire clean
 
 
 
 # all
 .all-impl: .all-pre .depcheck-impl
-	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=chipKIT WiFire build
+	    ${MAKE} SUBPROJECTS=${SUBPROJECTS} CONF=wifire build
 
 
 
