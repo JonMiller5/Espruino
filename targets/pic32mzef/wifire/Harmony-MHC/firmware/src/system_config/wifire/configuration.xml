@@ -327,12 +327,17 @@
       <Template>
         <Name>system_tasks.c</Name>
         <Path>Source Files/app/system_config/wifire</Path>
-        <Checksum>D55B07A27456B6829F68D2896D448D08</Checksum>
+        <Checksum>63877B1757DC28C686A2AE6F2C504449</Checksum>
+      </Template>
+      <Template>
+        <Name>drv_usart_static_read_write.c</Name>
+        <Path>Source Files/app/system_config/wifire/framework/driver/usart/src</Path>
+        <Checksum>BB56020C3526FD6307A49953F1E70DF3</Checksum>
       </Template>
       <Template>
         <Name>system_interrupt.c</Name>
         <Path>Source Files/app/system_config/wifire</Path>
-        <Checksum>DBEE4370E12E6D1543384D55C41756D8</Checksum>
+        <Checksum>0AA978FB3038FB6DA25155FCED61CB36</Checksum>
       </Template>
       <Template>
         <Name>system_definitions.h</Name>
@@ -342,12 +347,12 @@
       <Template>
         <Name>system_config.h</Name>
         <Path>Header Files/app/system_config/wifire</Path>
-        <Checksum>91B7C8280D31AB68815422A88DD58D0A</Checksum>
+        <Checksum>270D67A4656BAD10DED9ADAF20661957</Checksum>
       </Template>
       <Template>
         <Name>drv_usart_mapping.c</Name>
         <Path>Source Files/app/system_config/wifire/framework/driver/usart/src</Path>
-        <Checksum>892902B9FBD93E3EE8777929EFEC171A</Checksum>
+        <Checksum>4F730A3B8A1926148028DE71A3C5F5DF</Checksum>
       </Template>
       <Template>
         <Name>app.c</Name>
@@ -356,12 +361,12 @@
       <Template>
         <Name>drv_usart_static_local.h</Name>
         <Path>Header Files/app/system_config/wifire/framework/driver/usart/src</Path>
-        <Checksum>62F7F49D6A443F111DA38971475472FD</Checksum>
+        <Checksum>42084823D77BF5467EA9E7A21FF05F2F</Checksum>
       </Template>
       <Template>
         <Name>system_init.c</Name>
         <Path>Source Files/app/system_config/wifire</Path>
-        <Checksum>B4CEB55183CE34700A1CB396598E0932</Checksum>
+        <Checksum>0C92FE33E20B12E8452854A762CBCF89</Checksum>
       </Template>
       <Template>
         <Name>sys_ports_static.c</Name>
@@ -371,7 +376,7 @@
       <Template>
         <Name>drv_usart_static.c</Name>
         <Path>Source Files/app/system_config/wifire/framework/driver/usart/src</Path>
-        <Checksum>5CA08389DC532FFEBFE90E39A0DE3219</Checksum>
+        <Checksum>25A9459A45D7398DD5CB613EEFDCB421</Checksum>
       </Template>
       <Template>
         <Name>app.h</Name>
@@ -400,7 +405,7 @@
       <Template>
         <Name>drv_usart_static.h</Name>
         <Path>Header Files/app/system_config/wifire/framework/driver/usart</Path>
-        <Checksum>E18B3A26757A1DB9D194812DF856D939</Checksum>
+        <Checksum>CFC96C6EAB2164B9A32FA74D69ED3097</Checksum>
       </Template>
     </Templates>
     <CompilerItems>

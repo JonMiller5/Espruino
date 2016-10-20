@@ -1,12 +1,19 @@
 /*
- * This file is part of Espruino, a JavaScript interpreter for Microcontrollers
+ *  Copyright 2016 Microchip Technology Inc.
  *
- * Copyright (C) 2013 Gordon Williams <gw@pur3.co.uk>
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/* 
  * ----------------------------------------------------------------------------
  * Platform Specific part of Hardware interface Layer
  * ----------------------------------------------------------------------------
@@ -27,7 +34,7 @@
 
 #include <xc.h>
 #include <sys/attribs.h>
-#include "main.h"
+#include "app.h"
 #include "system_config.h"
 #include "system_definitions.h"
 #include "peripheral/usart/plib_usart.h"
@@ -36,6 +43,11 @@
 #include <assert.h>
 #ifndef __conditional_software_breakpoint
 #define __conditional_software_breakpoint(a) ((void)(0))
+#endif
+
+#ifndef TERMINAL_USART
+// The chipKIT WiFire board uses USART4 connected to an FTDI USART-to-USB device
+#define TERMINAL_USART USART_ID_4
 #endif
 
 #ifdef PIC32MZ_EF_SK_USART
@@ -111,6 +123,8 @@
 
 #define CORE_TICK_RATE (F_CPU/2000000ul)
 
+
+
 extern void __attribute__((nomips16, noreturn, far, weak)) __pic32_software_reset();
 extern void SYS_Initialize ( void* data );
 static int init = 0; // Temp hack to get jsiOneSecAfterStartup() going.
@@ -123,9 +137,9 @@ bool __pic32_WriteString(char* ptr)
     /* Write a character at a time, only if transmitter is empty */
     while (*ptr != '\0')
     {
-      while(PLIB_USART_TransmitterBufferIsFull(USART_ID_2));
+      while(PLIB_USART_TransmitterBufferIsFull(TERMINAL_USART));
         /* Send character */
-        PLIB_USART_TransmitterByteSend(USART_ID_2, *ptr);
+        PLIB_USART_TransmitterByteSend(TERMINAL_USART, *ptr);
 
         /* Increment to address of next character */
         ptr++;
@@ -165,7 +179,8 @@ void jshInit()
 
     SYS_Initialize ( NULL );
     
-    jshUSARTSetup(EV_SERIAL2,&inf);
+    jshUSARTSetup(EV_SERIAL4,&inf);
+    SYS_INT_SourceEnable(INT_SOURCE_USART_4_RECEIVE);
     __pic32_init_core_timer();
     
 
@@ -258,9 +273,18 @@ void jshPinSetValue(Pin pin, bool value) {
         case JSH_PORTB:
             PLIB_PORTS_PinSet (PORTS_ID_0, PORT_CHANNEL_B, pinInfo[pin].pin);
             break;
-        case JSH_PORTH:
-            PLIB_PORTS_PinSet (PORTS_ID_0, PORT_CHANNEL_H, pinInfo[pin].pin);
+        case JSH_PORTD:
+            PLIB_PORTS_PinSet (PORTS_ID_0, PORT_CHANNEL_D, pinInfo[pin].pin);
             break;
+        case JSH_PORTG:
+            PLIB_PORTS_PinSet (PORTS_ID_0, PORT_CHANNEL_G, pinInfo[pin].pin);
+            break;        
+        case JSH_PORTH:
+#if (__PIC32_PIN_COUNT__==144)
+            PLIB_PORTS_PinSet (PORTS_ID_0, PORT_CHANNEL_H, pinInfo[pin].pin);
+#endif
+            break;
+
         default:
             __conditional_software_breakpoint(0);
     }
@@ -272,8 +296,16 @@ void jshPinSetValue(Pin pin, bool value) {
         case JSH_PORTB:
             PLIB_PORTS_PinClear (PORTS_ID_0, PORT_CHANNEL_B, pinInfo[pin].pin);
             break;
+        case JSH_PORTD:
+            PLIB_PORTS_PinClear (PORTS_ID_0, PORT_CHANNEL_D, pinInfo[pin].pin);
+            break;
+        case JSH_PORTG:
+            PLIB_PORTS_PinClear (PORTS_ID_0, PORT_CHANNEL_G, pinInfo[pin].pin);
+            break;        
         case JSH_PORTH:
+#if (__PIC32_PIN_COUNT__==144)
             PLIB_PORTS_PinClear (PORTS_ID_0, PORT_CHANNEL_H, pinInfo[pin].pin);
+#endif
             break;
         default:
             __conditional_software_breakpoint(0);
@@ -288,7 +320,9 @@ bool jshPinGetValue(Pin pin) {
                 pinValue = PLIB_PORTS_PinGet (PORTS_ID_0, PORT_CHANNEL_B, pinInfo[pin].pin);
                 break;
         case JSH_PORTH:
+#if (__PIC32_PIN_COUNT__==144)
                 pinValue = PLIB_PORTS_PinGet (PORTS_ID_0, PORT_CHANNEL_H, pinInfo[pin].pin);
+#endif
                 break;
             default:
                 __conditional_software_breakpoint(0);
@@ -333,7 +367,7 @@ bool jshCanWatch(Pin pin) {
 }
 
 IOEventFlags jshPinWatch(Pin pin, bool shouldWatch) {
-  return EV_SERIAL2;
+  return EV_SERIAL4;
 } // start watching pin - return the EXTI associated with it
 
 /// Given a Pin, return the current pin function associated with it
@@ -370,14 +404,14 @@ void jshUSARTSetup(IOEventFlags device, JshUSARTInfo *inf) {
   if (device == EV_USBSERIAL) {
     return; // eep!
   }
-  else if (device != EV_SERIAL2)
+  else if (device != EV_SERIAL4)
   {
     jsExceptionHere(JSET_INTERNALERROR, "Unknown serial port device.");
     return;
   }
   
 
-  PLIB_USART_Enable(USART_ID_2);
+  PLIB_USART_Enable(TERMINAL_USART);
   __pic32_WriteString("\r\n\nEspruino on PIC32MZ MCU - Proof of Concept\r\n");
 }
 /** Kick a device into action (if required). For instance we may need
@@ -385,18 +419,18 @@ void jshUSARTSetup(IOEventFlags device, JshUSARTInfo *inf) {
 
 void jshUSARTKick(IOEventFlags device) {
 
-  if (device != EV_SERIAL2)
+  if (device != EV_SERIAL4)
   {
 	  return;
   }
 
-  int check_valid_char = jshGetCharToTransmit(EV_SERIAL2);
+  int check_valid_char = jshGetCharToTransmit(EV_SERIAL4);
   if (check_valid_char >= 0)
   {
     uint8_t character = (uint8_t) check_valid_char;
-    while(PLIB_USART_TransmitterBufferIsFull(USART_ID_2));
+    while(PLIB_USART_TransmitterBufferIsFull(TERMINAL_USART));
     /* Send character */
-    PLIB_USART_TransmitterByteSend(USART_ID_2, character);
+    PLIB_USART_TransmitterByteSend(TERMINAL_USART, character);
   }
 
 }
@@ -488,9 +522,8 @@ void jshSPISetReceive(IOEventFlags device, bool isReceive)
       __builtin_software_breakpoint();
       return;
   }
-
   // TODO
-//  __builtin_software_breakpoint();
+
 }
 
 /** Wait until SPI send is finished, and flush all received data */
@@ -502,7 +535,6 @@ void jshSPIWait(IOEventFlags device)
       return;
   }
 
-//  __builtin_software_breakpoint();
   /* Loop until not sending */
   while (PLIB_SPI_IsBusy(SPI_ID_1));
 }
@@ -555,38 +587,6 @@ bool jshSleep(JsSysTime timeUntilWake) {
   return true;
 }
 
-/// Utility timer handling functions ------------------------------
-
-//const nrf_drv_timer_t TIMER_JSH = NRF_DRV_TIMER_INSTANCE(0);
-
-/*void timer_event_handler(nrf_timer_event_t event_type, void * p_context)
-{
-  switch(event_type)
-  {
-    case NRF_TIMER_EVENT_COMPARE0:
-      // Throw an interrupt.
-      break;
-
-    default:
-      // Do nothing.
-      break;
-  }
-}
-
-void timer_init(JsSysTime period)
-{
-  uint32_t time_ticks;
-  uint32_t err_code = NRF_SUCCESS;
-
-  err_code = nrf_drv_timer_init(&TIMER_JSH, NULL, timer_event_handler);
-  APP_ERROR_CHECK(err_code);
-
-  time_ticks = nrf_drv_timer_ms_to_ticks(&TIMER_JSH, (uint32_t) period);
-
-  nrf_drv_timer_extended_compare(&TIMER_JSH, NRF_TIMER_CC_CHANNEL0, time_ticks, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
-
-  nrf_drv_timer_enable(&TIMER_JSH);
-}*/
 
 /// Start the timer and get it to interrupt after 'period'
 void jshUtilTimerStart(JsSysTime period) {
@@ -643,30 +643,27 @@ void __ISR_AT_VECTOR(_CORE_TIMER_VECTOR, IPL6SRS) __attribute__((no_fpu)) CoreTi
 }
 
 
-void __ISR_AT_VECTOR(_UART2_TX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartTransmitInstance0(void)
+void __ISR_AT_VECTOR(_UART4_TX_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartTransmitInstance0(void)
 {
-
-
     /* TODO: Add code to process interrupt here */
 
     /* Clear pending interrupt */
-    PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_TRANSMIT);
+    PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_4_TRANSMIT);
 }
-void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstance0(void)
+void __ISR_AT_VECTOR(_UART4_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstance0(void)
 {
-    /* TODO: Add code to process interrupt here */
-
-	if(PLIB_INT_SourceFlagGet(INT_ID_0, INT_SOURCE_USART_2_RECEIVE))
+    __conditional_software_breakpoint(0);
+	if(PLIB_INT_SourceFlagGet(INT_ID_0, INT_SOURCE_USART_4_RECEIVE))
     {
       uint8_t data;
-        /* Make sure receive buffer has data availible */
-        if (PLIB_USART_ReceiverDataIsAvailable(USART_ID_2))
+        /* Make sure receive buffer has data available */
+        if (PLIB_USART_ReceiverDataIsAvailable(TERMINAL_USART))
         {
             /* Get the data from the buffer */
-            data = PLIB_USART_ReceiverByteReceive(USART_ID_2);
+            data = PLIB_USART_ReceiverByteReceive(TERMINAL_USART);
         }
-        PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_RECEIVE);
-        jshPushIOCharEvent(EV_SERIAL2, (char) data);
+        PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_4_RECEIVE);
+        jshPushIOCharEvent(EV_SERIAL4, (char) data);
     }
     else
     {
@@ -674,9 +671,9 @@ void __ISR_AT_VECTOR(_UART2_RX_VECTOR, IPL1SRS) _IntHandlerDrvUsartReceiveInstan
     }
 
 }
-void __ISR_AT_VECTOR(_UART2_FAULT_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartErrorInstance0(void)
+void __ISR_AT_VECTOR(_UART4_FAULT_VECTOR, IPL1SRS) __attribute__((no_fpu)) _IntHandlerDrvUsartErrorInstance0(void)
 {
 //    __conditional_software_breakpoint(0);
     /* Clear pending interrupt */
-    PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_2_ERROR);
+    PLIB_INT_SourceFlagClear(INT_ID_0, INT_SOURCE_USART_4_ERROR);
 }

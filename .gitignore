@@ -31,3 +31,5 @@ xtensa-lx106-elf
 *.s
 /targets/pic32mzef/PIC32MZ-EF-SK.X/nbproject/private/
 src/cscope.out
+private/
+/targets/pic32mzef/wifire/Harmony-MHC/firmware/Harmony-MHC.X/nbproject/private/

@@ -14,7 +14,9 @@
 #include "platform_config.h"
 #include "jsinteractive.h"
 #include "jshardware.h"
-#include "main.h"
+#include "app.h"
+
+
 
 int main() {
   jshInit();
@@ -29,4 +31,9 @@ int main() {
   //jsiKill();
   //jsvKill();
   //jshKill();
+}
+
+/* Stub for now */
+void APP_Initialize ( void )
+{
 }
