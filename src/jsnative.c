@@ -243,7 +243,10 @@ int32_t __attribute__((optimize("-O0"), noinline)) sanity_int_flt_int(int32_t a,
 /** Perform sanity tests to ensure that  jsnCallFunction is working as expected */
 void jsnSanityTest() {
   JsVar *args[4];
-
+#if defined(__GNUC__)
+  extern __attribute__((weak)) void jsnTargetTests(void);
+#endif
+  
   if (jsvGetFloatAndUnLock(jsnCallFunction(sanity_pi, JSWAT_JSVARFLOAT, 0, 0, 0)) != 3.141592)
   {
       jsiConsolePrint("WARNING: jsnative.c sanity check failed (returning double values)");
@@ -274,5 +277,11 @@ void jsnSanityTest() {
 #endif
   }
   jsvUnLockMany(3, args);
-}
 
+#if defined(__GNUC__)
+  if (jsnTargetTests)
+  {
+      jsnTargetTests();
+  }
+#endif
+}
