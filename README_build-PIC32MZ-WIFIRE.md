@@ -7,10 +7,11 @@ Install MPLAB Harmony Configurator (MHC) for Harmony v2.01b, which is a plugin t
 
 -----------------------------------------------------------
 
-1. Fork the GitHub repository located at https://github.com/jasonkajita/Espruino
+- Fork the GitHub repository located at https://github.com/jasonkajita/Espruino
 
 TERMINAL:
-1. Clone your forked repository to your local machine.
+
+- Clone your forked repository to your local machine.
 ```
 $ git clone https://github.com/<username>/Espruino.git
 "Cloning into 'Espruino'...
@@ -21,33 +22,35 @@ Receiving objects: 100% (28775/28775), 46.01 MiB | 9.11 MiB/s, done.
 Resolving deltas: 100% (19229/19229), done."
 ```
 
-1. Checkout the 'pic32mzef_wifire' branch.
+- Checkout the 'pic32mzef_wifire' branch.
 ```
 $ cd Espruino
 $ git checkout pic32mzef_wifire
 ```
-1. Branch pic32mzef_wifire set up to track remote branch pic32mzef_wifire from origin.
+- Branch pic32mzef_wifire set up to track remote branch pic32mzef_wifire from origin.
 Switched to a new branch 'pic32mzef_wifire'
 
 MPLAB X:
-1. In MPLAB X, open the project located in 
+
+- In MPLAB X, open the project located in 
 ./Espruino/targets/pic32mzef/wifire/Harmony-MHC/firmware/Harmony-MHC.X
 Ensure that this project is set as your main project.
 Launch the MPLAB Harmony Configurator (Tools menu -> Embedded -> MPLAB Harmony Configurator)
 Open Configuration: Espruino/targets/pic32mzef/wifire/Harmony-MHC/firmware/src/system_config/wifire/wifire.mhc
 On the toolbar on MHC, press the "Generate Code" button and press Generate. MHC should generate new files in the Espruino/targets/pic32mzef/wifire/Harmony-MHC/firmware/src directory.
 
-1. Open 'Makefile' in a text editor and find where the 'MICROCHIP_HARMONY_PATH' variable is set. Here you can set the variable to point to your Harmony installation. Alternatively, you can set up MICROCHIP_HARMONY_PATH as an environment variable.
+- Open 'Makefile' in a text editor and find where the 'MICROCHIP_HARMONY_PATH' variable is set. Here you can set the variable to point to your Harmony installation. Alternatively, you can set up MICROCHIP_HARMONY_PATH as an environment variable.
 
-1. In 'Makefile' search for PIC32MZ_EF_WIFIRE. Here you will find areas where you can add source files, C wrapper source files, and other options that can affect the build process.
+- In 'Makefile' search for PIC32MZ_EF_WIFIRE. Here you will find areas where you can add source files, C wrapper source files, and other options that can affect the build process.
 
 TERMINAL:
-1. Ensure that the xc32-gcc executable is located in your system PATH. If it is not, add it to your PATH as appropriate for your operating system.
+
+- Ensure that the xc32-gcc executable is located in your system PATH. If it is not, add it to your PATH as appropriate for your operating system.
 ```
 $ xc32-gcc --version
 xc32-gcc (Microchip Technology) 4.8.3 MPLAB XC32 Compiler v1.42 Build date: Jun  1 2016
 ```
-1. In the Espruino directory containing the Makefile, run the following make command.
+- In the Espruino directory containing the Makefile, run the following make command.
 ```
 $ make PIC32MZ_EF_WIFIRE=1 all -j
 ```
