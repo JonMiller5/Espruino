@@ -7,6 +7,9 @@
 *.srec
 *.bin
 *.pyc
+cscope.out
+diff.txt
+log.txt
 gen/*
 .vagrant/*
 boards/*.html
@@ -33,3 +36,6 @@ xtensa-lx106-elf
 src/cscope.out
 private/
 /targets/pic32mzef/wifire/Harmony-MHC/firmware/Harmony-MHC.X/nbproject/private/
+/targets/pic32mzef/wifire/Harmony-MHC/firmware/Harmony-MHC.X/build/wifire/
+/targets/pic32mzef/wifire/Harmony-MHC/firmware/Harmony-MHC.X/dist/wifire/
+/targets/pic32mzef/wifire/Harmony-MHC/firmware/src

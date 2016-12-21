@@ -13,9 +13,12 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
- 
+ #include "jsinteractive.h"
+
+
 void jsnTargetTests (void)
 {
+
     // Add some WiFire specific tests here
 #if defined(__JS_DEBUG)
     __builtin_software_breakpoint();

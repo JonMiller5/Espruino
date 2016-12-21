@@ -52,7 +52,8 @@ typedef enum {
   JSWAT_EXECUTE_IMMEDIATELY_MASK = 0x7E00, 
 
   JSWAT_THIS_ARG    = 0x8000, // whether a 'this' argument should be tacked onto the start
-  JSWAT_ARGUMENTS_MASK = ~(JSWAT_MASK | JSWAT_THIS_ARG)
+  JSWAT_ARGUMENTS_MASK = ~(JSWAT_MASK | JSWAT_THIS_ARG),
+  JSWAT_ARGUMENTS__LAST= 0xFFFFFFFF
 } JsnArgumentType;
 
 // number of bits needed for each argument bit
@@ -62,7 +63,11 @@ typedef enum {
 typedef struct {
   unsigned short strOffset;
   void (*functionPtr)(void);
+#if defined(__XC32)
+  unsigned int functionSpec; // JsnArgumentType
+#else
   unsigned short functionSpec; // JsnArgumentType
+#endif
 } PACKED_FLAGS JswSymPtr;
 
 /// Information for each list of built-in symbols

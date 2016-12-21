@@ -7,7 +7,7 @@
   <General>
     <HarmonyPath path="../../../../../../microchip/harmony/v2_01b"/>
     <Processor name=""/>
-    <Board name=" "/>
+    <Board name=""/>
     <ForceOptimization flag="true"/>
     <MergeStrategy flag="USER_ALL"/>
   </General>

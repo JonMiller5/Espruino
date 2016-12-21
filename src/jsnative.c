@@ -17,8 +17,11 @@
 #include "jsinteractive.h"
 
 // none of this is used at the moment
-
+#if defined(__XC32)
+#define MAX_ARGS 8
+#else
 #define MAX_ARGS 12
+#endif
 
 #if defined(__i386__) || defined(__x86_64__)
     #define USE_X86_CDECL // cdecl on x86 puts FP args elsewhere!
@@ -46,7 +49,7 @@
 #endif
 
 /** Call a function with the given argument specifiers */
-JsVar *jsnCallFunction(void *function, JsnArgumentType argumentSpecifier, JsVar *thisParam, JsVar **paramData, int paramCount) {
+JsVar __attribute__((optimize("-O0"))) *jsnCallFunction(void *function, JsnArgumentType argumentSpecifier, JsVar *thisParam, JsVar **paramData, int paramCount) {
   JsnArgumentType returnType = (JsnArgumentType)(argumentSpecifier&JSWAT_MASK);
   JsVar *argsArray = 0; // if JSWAT_ARGUMENT_ARRAY is ever used (note it'll only ever be used once)
   int paramNumber = 0; // how many parameters we have

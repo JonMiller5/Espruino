@@ -129,7 +129,11 @@ typedef struct {
 /// Data for native functions
 typedef struct {
   void (*ptr)(void); ///< Function pointer - this may not be the real address - see jsvGetNativeFunctionPtr
+#if defined(__XC32)
+  uint32_t argTypes; ///< Actually a list of JsnArgumentType
+#else
   uint16_t argTypes; ///< Actually a list of JsnArgumentType
+#endif
 } PACKED_FLAGS JsVarDataNative;
 
 /// Data for native strings
@@ -320,7 +324,12 @@ JsVar *jsvMakeIntoVariableName(JsVar *var, JsVar *valueOrZero);
 void jsvMakeFunctionParameter(JsVar *v);
 JsVar *jsvNewFromPin(int pin);
 JsVar *jsvNewArray(JsVar **elements, int elementCount); ///< Create an array containing the given elements
+#if defined(__XC32)
+JsVar *jsvNewNativeFunction(void (*ptr)(void), unsigned int argTypes); ///< Create an array containing the given elements
+#else
 JsVar *jsvNewNativeFunction(void (*ptr)(void), unsigned short argTypes); ///< Create an array containing the given elements
+#endif
+
 JsVar *jsvNewArrayBufferFromString(JsVar *str, unsigned int lengthOrZero); ///< Create a new ArrayBuffer backed by the given string. If length is not specified, it will be worked out
 
 void *jsvGetNativeFunctionPtr(const JsVar *function); ///< Get the actual pointer from a native function - this may not be the contents of varData.native.ptr

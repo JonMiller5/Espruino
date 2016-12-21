@@ -11,12 +11,11 @@
  * Platform Specific entry point
  * ----------------------------------------------------------------------------
  */
+
 #include "platform_config.h"
 #include "jsinteractive.h"
 #include "jshardware.h"
 #include "app.h"
-
-
 
 int main() {
   jshInit();

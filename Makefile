@@ -1581,7 +1581,7 @@ SOURCES +=                                                                     \
   $(MICROCHIP_HARMONY_PATH)/bsp/pic32mz_ef_sk/bsp_sys_init.c \
   $(MICROCHIP_HARMONY_PATH)/framework/system/int/src/sys_int_pic32.c
 
-LDFLAGS += -g -Os -mdebugger -Wl,--defsym=_DEBUGGER=1 \
+LDFLAGS += -g -O1 -mdebugger -Wl,--defsym=_DEBUGGER=1 \
   -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
   -Wl,--report-mem -mreserve=data@0x0:0x37F \
   -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFM144_peripherals.a,--end-group \
@@ -1596,7 +1596,7 @@ INCLUDE +=                                      \
   -I./targets/pic32mzef/wifire/Harmony-MHC/firmware/src/system_config/wifire/framework \
   -I./targets/pic32mzef/wifire/Harmony-MHC/firmware/src/system_config/wifire/bsp
   
-OPTIMIZEFLAGS += -O1 -fno-common -fno-exceptions -fdata-sections -ffunction-sections
+OPTIMIZEFLAGS += -Og -fno-common -fno-exceptions -fdata-sections -ffunction-sections
 SOURCES +=                                                                     \
   targets/pic32mzef/main.c                                                     \
   targets/pic32mzef/jshardware.c
@@ -1629,10 +1629,16 @@ SOURCES +=                                                                     \
  $(MICROCHIP_HARMONY_PATH)/framework/usb/src/dynamic/usb_host_msd.c  \
  $(MICROCHIP_HARMONY_PATH)/framework/usb/src/dynamic/usb_host_scsi.c
  
-LDFLAGS += -g -Os -mdebugger -Wl,--defsym=_DEBUGGER=1 \
+ INCLUDE +=                                                                    \
+ ./targets/pic32mzef/wifire/libs/test
+
+ WRAPPERSOURCES +=                                                             \
+ ./targets/pic32mzef/wifire/libs/test/jswrap_ccall_sanity_test.c
+ 
+LDFLAGS += -Os -mdebugger -Wl,--defsym=_DEBUGGER=1 \
   -Wl,--defsym=_min_stack_size=0x8000,--defsym=_min_heap_size=0x2000 \
   -Wl,--report-mem -mreserve=data@0x0:0x37F \
-  -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFM144_peripherals.a,--end-group \
+  -Wl,--start-group,$(MICROCHIP_HARMONY_PATH)/bin/framework/peripheral/PIC32MZ2048EFG144_peripherals.a,--end-group \
   -Wl,--gc-sections
 endif # WIFIRE
 

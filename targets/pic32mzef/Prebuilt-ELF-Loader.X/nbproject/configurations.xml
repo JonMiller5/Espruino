@@ -619,6 +619,9 @@
         <makeCustomizationEnableLongLines>false</makeCustomizationEnableLongLines>
         <makeCustomizationNormalizeHexFile>false</makeCustomizationNormalizeHexFile>
       </makeCustomizationType>
+      <RealICEPlatformTool>
+        <property key="firmware.download.all" value="false"/>
+      </RealICEPlatformTool>
     </conf>
   </confs>
 </configurationDescriptor>

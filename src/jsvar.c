@@ -896,8 +896,11 @@ JsVar *jsvNewArray(JsVar **elements, int elementCount) {
     jsvArrayPush(arr, elements[i]);
   return arr;
 }
-
+#if defined(__XC32)
+JsVar *jsvNewNativeFunction(void (*ptr)(void), unsigned int argTypes) {
+#else
 JsVar *jsvNewNativeFunction(void (*ptr)(void), unsigned short argTypes) {
+#endif
   JsVar *func = jsvNewWithFlags(JSV_FUNCTION | JSV_NATIVE);
   if (!func) return 0;
   func->varData.native.ptr = ptr;

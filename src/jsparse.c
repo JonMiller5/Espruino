@@ -572,8 +572,6 @@ NO_INLINE JsVar *jspeFunctionCall(JsVar *function, JsVar *functionName, JsVar *t
         }
       }
 
-
-
       if (nativePtr) {
         returnVar = jsnCallFunction(nativePtr, function->varData.native.argTypes, thisVar, argPtr, argCount);
       } else {
@@ -1121,7 +1119,7 @@ NO_INLINE JsVar *jspeConstruct(JsVar *func, JsVar *funcName, bool hasArgs) {
   return thisObj;
 }
 
-NO_INLINE JsVar *jspeFactorFunctionCall() {
+NO_INLINE __attribute__((optimize("-O0"))) JsVar *jspeFactorFunctionCall() {
   /* The parent if we're executing a method call */
   bool isConstructor = false;
   if (execInfo.lex->tk==LEX_R_NEW) {
