@@ -1,6 +1,6 @@
 # Getting Started developing Espruino for PIC32 MCUs using the chipKIT Wi-Fire
 
-NOTE: We wrote these instructions using OS X, but you should be able to follow a similar procedure using Linux or Cygwin under Windows.
+NOTE: We wrote these instructions using OS X, but you should be able to follow a similar procedure using Linux. For Windows users, the Espruino instructions (https://github.com/jasonkajita/Espruino/blob/master/README_Building.md) recommend using a Linux virtual machine.
 
 Install MPLAB X, MPLAB XC32 v1.42, MPLAB Harmony v2.01b.
 Install MPLAB Harmony Configurator (MHC) for Harmony v2.01b, which is a plugin to MPLAB X.
