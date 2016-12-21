@@ -62,7 +62,7 @@ This ELF file contains the image to be programmed to the target board.
 ## PROGRAMMING
 To program the generated espruino.elf file to the target board:
 
-Connect the debugger to the chipKIT Wi-Fire target board. The RealIce-Debug-WiFire.jpg photo shows the REAL ICE being connected to the WiFire board, but you could also use an MPLAB ICD 3 or a PICkit 3 debugger.
+Connect the debugger to the chipKIT Wi-Fire target board. I am using the REAL ICE connected to the WiFire board (JP1 ICSP), but you could also use an MPLAB ICD 3 or a PICkit 3 debugger.
 
 Open the MPLAB X project, Espruino/targets/pic32mzef/Prebuilt-ELF-Loader.X. This project is set to import the espruino.elf file and program it. (Alternatively, you can create a new project and select Microchip Embedded -> Prebuilt (Hex, Loadable Image) Project.)
 
