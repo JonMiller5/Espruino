@@ -71,6 +71,7 @@ Make the project your main project and Press the Debug Main Project toolbar butt
 Connect WiFire's UART USB port to your PC and open the Espruino Chrome app. Connect to the board in the Espruino app.
 
 You might need to reset the debugger in order to see the output message in the Chrome app.
+
 -----------------------------------------------------------
 
 ## Ideas for projects:
