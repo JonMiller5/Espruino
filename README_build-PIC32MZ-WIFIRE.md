@@ -37,11 +37,11 @@ MPLAB X:
 Ensure that this project is set as your main project.
 Launch the MPLAB Harmony Configurator (Tools menu -> Embedded -> MPLAB Harmony Configurator)
 Open Configuration: Espruino/targets/pic32mzef/wifire/Harmony-MHC/firmware/src/system_config/wifire/wifire.mhc
-On the toolbar on MHC, press the "Generate Code" button and press Generate. MHC should generate new files in the Espruino/targets/pic32mzef/wifire/Harmony-MHC/firmware/src directory.
+On the toolbar on MHC, press the "Generate Code" button and press Generate. MHC should generate new files in the Espruino/targets/pic32mzef/wifire/Harmony-MHC/firmware/src directory. These generated files are referenced in the Espruino Makefile.
 
-- Open 'Makefile' in a text editor and find where the 'MICROCHIP_HARMONY_PATH' variable is set. Here you can set the variable to point to your Harmony installation. Alternatively, you can set up MICROCHIP_HARMONY_PATH as an environment variable.
+- Open Espruino/Makefile in a text editor and find where the 'MICROCHIP_HARMONY_PATH' variable is set. Here you can set the variable to point to your Harmony installation on your local machine. Alternatively, you can set up MICROCHIP_HARMONY_PATH as an environment variable.
 
-- In 'Makefile' search for PIC32MZ_EF_WIFIRE. Here you will find areas where you can add source files, C wrapper source files, and other options that can affect the build process.
+- In the 'Makefile', search for PIC32MZ_EF_WIFIRE. Here you will find areas where you can add source files, C wrapper source files, and other options that can affect the build process.
 
 TERMINAL:
 
