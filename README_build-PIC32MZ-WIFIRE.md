@@ -82,3 +82,7 @@ You might need to reset the debugger in order to see the output message in the C
 
 -----------------------------------------------------------
 
+## Licensing:
+
+The Espruino project uses an MIT license. Microchip files use an Apache license. This means that no GPL code should be added to the repository.
+
